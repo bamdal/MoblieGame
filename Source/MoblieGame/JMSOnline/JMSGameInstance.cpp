@@ -8,12 +8,15 @@
 #include "OnlineSubsystemTypes.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Interfaces/OnlineExternalUIInterface.h"
 #include "Online/OnlineSessionNames.h"
 
 
+const FName JMSSessionName = TEXT("Test Session");
+
 UJMSGameInstance::UJMSGameInstance()
 {
-	bLoginSuccessful = false;
+	bIsLoginIn = false;
 }
 
 void UJMSGameInstance::Init()
@@ -48,7 +51,7 @@ void UJMSGameInstance::Login()
 
 void UJMSGameInstance::OnLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error)
 {
-	bLoginSuccessful = bWasSuccessful;
+	bIsLoginIn = bWasSuccessful;
 	if (OnlineSubsystem)
 	{
 		if (IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface())
@@ -70,14 +73,13 @@ void UJMSGameInstance::OnLoginComplete(int32 LocalUserNum, bool bWasSuccessful, 
 
 void UJMSGameInstance::CreateSession()
 {
-	if (bLoginSuccessful)
+	if (bIsLoginIn)
 	{
 		if (OnlineSubsystem)
 		{
 			IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
 			if (SessionPtr)
 			{
-
 				IOnlineIdentityPtr IdentityPtr = OnlineSubsystem->GetIdentityInterface();
 				if (IdentityPtr.IsValid())
 				{
@@ -89,7 +91,7 @@ void UJMSGameInstance::CreateSession()
 					}
 				}
 
-				
+
 				FOnlineSessionSettings SessionSettings;
 				SessionSettings.bIsDedicated = false;
 				SessionSettings.bShouldAdvertise = true;
@@ -100,10 +102,10 @@ void UJMSGameInstance::CreateSession()
 				SessionSettings.bUsesPresence = true;
 				SessionSettings.bUseLobbiesIfAvailable = true;
 
-				SessionSettings.Set(SEARCH_KEYWORDS,FString("YTTutorialLobby"),EOnlineDataAdvertisementType::ViaOnlineService);
+				SessionSettings.Set(SEARCH_KEYWORDS, FString("YTTutorialLobby"), EOnlineDataAdvertisementType::ViaOnlineService);
 
-				SessionPtr->OnCreateSessionCompleteDelegates.AddUObject(this,&ThisClass::OnCreateSessionComplete);
-				SessionPtr->CreateSession(0,TEXT("Test Session"),SessionSettings);
+				SessionPtr->OnCreateSessionCompleteDelegates.AddUObject(this, &ThisClass::OnCreateSessionComplete);
+				SessionPtr->CreateSession(0, JMSSessionName, SessionSettings);
 			}
 
 
@@ -156,6 +158,7 @@ void UJMSGameInstance::CreateSession()
 void UJMSGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	UE_LOG(LogTemp, Warning, TEXT("UJMSGameInstance::OnCreateSessionComplete Succeed : %d"), bWasSuccessful);
+
 	/*if (OnlineSubsystem)
 	{
 		IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
@@ -164,4 +167,96 @@ void UJMSGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 			SessionPtr->ClearOnCreateSessionCompleteDelegates(this);
 		}
 	}*/
+}
+
+void UJMSGameInstance::DestroySession()
+{
+	if (bIsLoginIn)
+	{
+		if (OnlineSubsystem)
+		{
+			IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
+			if (SessionPtr)
+			{
+				SessionPtr->OnDestroySessionCompleteDelegates.AddUObject(this, &ThisClass::OnDestroySessionComplete);
+				SessionPtr->DestroySession(JMSSessionName);
+			}
+		}
+	}
+}
+
+void UJMSGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if (OnlineSubsystem)
+	{
+		IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
+		if (SessionPtr)
+		{
+			SessionPtr->ClearOnDestroySessionCompleteDelegates(this);
+		}
+	}
+}
+
+void UJMSGameInstance::GetAllFriends()
+{
+	if (bIsLoginIn)
+	{
+		if (OnlineSubsystem)
+		{
+			IOnlineFriendsPtr FriendsPtr = OnlineSubsystem->GetFriendsInterface();
+			if (FriendsPtr)
+			{
+				FriendsPtr->ReadFriendsList(0, FString(""),
+				                            FOnReadFriendsListComplete::CreateUObject(this, &UJMSGameInstance::OnReadFriendsListComplete));
+			}
+		}
+	}
+}
+
+void UJMSGameInstance::OnReadFriendsListComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& ErrorStr)
+{
+	if (bWasSuccessful)
+	{
+		if (OnlineSubsystem)
+		{
+			IOnlineFriendsPtr FriendsPtr = OnlineSubsystem->GetFriendsInterface();
+			if (FriendsPtr)
+			{
+				TArray<TSharedRef<FOnlineFriend>> FriendsList;
+				if (FriendsPtr->GetFriendsList(0, ListName, FriendsList))
+				{
+					for (TSharedRef<FOnlineFriend> OnlineFriend : FriendsList)
+					{
+						FString FriendName = OnlineFriend.Get().GetRealName();
+						UE_LOG(LogTemp, Warning, TEXT("Friend Name: %s"), *FriendName);
+					}
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("OnReadFriendsListComplete FriendsList is Fail!!"));
+				}
+			}
+		}
+		UE_LOG(LogTemp, Warning, TEXT("OnReadFriendsListComplete is Success At Getting All FriendsList!!"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("OnReadFriendsListComplete bWasSuccessful is Fail!!"));
+	}
+}
+
+void UJMSGameInstance::ShowUI()
+{
+	if (bIsLoginIn)
+	{
+		if (OnlineSubsystem)
+		{
+			IOnlineExternalUIPtr ExUIPtr = OnlineSubsystem->GetExternalUIInterface();
+			if (ExUIPtr)
+			{
+				//ExUIPtr->ShowFriendsUI(0);
+				ExUIPtr->ShowInviteUI(0,JMSSessionName);
+			}
+		}
+	}
 }
