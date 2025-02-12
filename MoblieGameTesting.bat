@@ -1,0 +1,1 @@
+start "" "D:\UnrealEngine-5.5.3-release\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "D:\UnrealEngine-5.5.3-release\Game\MoblieGame\MoblieGame.uproject" -game -ResX=800 -ResY=900 -WinX=0 -WinY=20 -log

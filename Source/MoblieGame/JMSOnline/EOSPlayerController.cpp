@@ -63,3 +63,4 @@ void AEOSPlayerController::HandleLoginCompleted(int32 LocalUserNum, bool bWasSuc
 	Identity->ClearOnLoginCompleteDelegate_Handle(LocalUserNum,LoginDelegateHandle);
 	LoginDelegateHandle.Reset();
 }
+

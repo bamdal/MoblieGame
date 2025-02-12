@@ -29,6 +29,7 @@ protected:
 	void HandleLoginCompleted(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& ErrorMessage);
 	FDelegateHandle LoginDelegateHandle;
 	
-	
+
+
 	
 };
