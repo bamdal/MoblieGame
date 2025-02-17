@@ -9,6 +9,7 @@
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Interfaces/OnlineExternalUIInterface.h"
+#include "Kismet/GameplayStatics.h"
 #include "Online/OnlineSessionNames.h"
 
 
@@ -24,7 +25,7 @@ void UJMSGameInstance::Init()
 	Super::Init();
 
 	OnlineSubsystem = Online::GetSubsystem(GetWorld());
-	Login();
+
 }
 
 void UJMSGameInstance::Login()
@@ -38,6 +39,28 @@ void UJMSGameInstance::Login()
 			Credentials.Type = TEXT("developer"); // EOS 로그인 타입 지정
 			Credentials.Id = TEXT("127.0.0.1:8081"); // 공백 유지
 			Credentials.Token = TEXT("JMSTestUser"); // 공백 유지
+
+			/*Credentials.Type = TEXT("accountportal");  // EOS 로그인 타입 지정
+			Credentials.Id = TEXT("");  // 공백 유지
+			Credentials.Token = TEXT("");  // 공백 유지*/
+
+			Identity->OnLoginCompleteDelegates->AddUObject(this, &ThisClass::OnLoginComplete);
+			Identity->Login(0, Credentials);
+		}
+	}
+}
+
+void UJMSGameInstance::Login2()
+{
+	if (OnlineSubsystem)
+	{
+		if (IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface())
+		{
+			FOnlineAccountCredentials Credentials;
+
+			Credentials.Type = TEXT("developer"); // EOS 로그인 타입 지정
+			Credentials.Id = TEXT("127.0.0.1:8081"); // 공백 유지
+			Credentials.Token = TEXT("JMSTestUser2"); // 공백 유지
 
 			/*Credentials.Type = TEXT("accountportal");  // EOS 로그인 타입 지정
 			Credentials.Id = TEXT("");  // 공백 유지
@@ -159,14 +182,14 @@ void UJMSGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 {
 	UE_LOG(LogTemp, Warning, TEXT("UJMSGameInstance::OnCreateSessionComplete Succeed : %d"), bWasSuccessful);
 
-	/*if (OnlineSubsystem)
+	if (OnlineSubsystem)
 	{
 		IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
 		if (SessionPtr)
 		{
 			SessionPtr->ClearOnCreateSessionCompleteDelegates(this);
 		}
-	}*/
+	}
 }
 
 void UJMSGameInstance::DestroySession()
@@ -245,7 +268,7 @@ void UJMSGameInstance::OnReadFriendsListComplete(int32 LocalUserNum, bool bWasSu
 	}
 }
 
-void UJMSGameInstance::ShowUI()
+void UJMSGameInstance::ShowInviteUI()
 {
 	if (bIsLoginIn)
 	{
@@ -254,9 +277,108 @@ void UJMSGameInstance::ShowUI()
 			IOnlineExternalUIPtr ExUIPtr = OnlineSubsystem->GetExternalUIInterface();
 			if (ExUIPtr)
 			{
-				//ExUIPtr->ShowFriendsUI(0);
-				ExUIPtr->ShowInviteUI(0,JMSSessionName);
+				ExUIPtr->ShowInviteUI(0, JMSSessionName);
 			}
+		}
+	}
+}
+
+void UJMSGameInstance::ShowFriendsUI()
+{
+	if (bIsLoginIn)
+	{
+		if (OnlineSubsystem)
+		{
+			IOnlineExternalUIPtr ExUIPtr = OnlineSubsystem->GetExternalUIInterface();
+			if (ExUIPtr)
+			{
+				ExUIPtr->ShowFriendsUI(0);
+			}
+		}
+	}
+}
+
+void UJMSGameInstance::FindSessions()
+{
+	if (bIsLoginIn)
+	{
+		if (OnlineSubsystem)
+		{
+			IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
+			if (SessionPtr)
+			{
+				// 메모리 관리를 위한 스마트 포인터 사용 그냥 new쓰면 위험하니까
+				SearchSetting = MakeShareable(new FOnlineSessionSearch);
+
+				// 세션 검색시 찾게될 설정
+				SearchSetting->MaxSearchResults = 8000;
+				SearchSetting->QuerySettings.Set(SEARCH_KEYWORDS, FString("YTTutorialLobby"), EOnlineComparisonOp::Equals);
+				SearchSetting->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
+
+				SessionPtr->OnFindSessionsCompleteDelegates.AddUObject(this, &UJMSGameInstance::OnFindSessionsComplete);
+				SessionPtr->FindSessions(0, SearchSetting.ToSharedRef());
+			}
+		}
+	}
+}
+
+void UJMSGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnFindSessionsComplete bWasSuccessful is %d!!"), bWasSuccessful);
+	if (bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Find %d Lobbies"), SearchSetting->SearchResults.Num());
+		if (OnlineSubsystem)
+		{
+			IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
+			if (SessionPtr)
+			{
+				if (SearchSetting->SearchResults.Num() > 0)
+				{
+					SessionPtr->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinSessionComplete);
+					SessionPtr->JoinSession(0, JMSSessionName, SearchSetting->SearchResults[0]);
+				}
+			}
+		}
+	}
+
+	if (OnlineSubsystem)
+	{
+		IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
+		if (SessionPtr)
+		{
+			SessionPtr->ClearOnFindSessionsCompleteDelegates(this);
+		}
+	}
+}
+
+void UJMSGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type JoinResult)
+{
+	if (JoinResult == EOnJoinSessionCompleteResult::Success)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnJoinSessionComplete Success!!"));
+		
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnJoinSessionComplete Failed!!"));
+	}
+	
+	if (OnlineSubsystem)
+	{
+		IOnlineSessionPtr SessionPtr = OnlineSubsystem->GetSessionInterface();
+		if (SessionPtr)
+		{
+			FString ConnectionInfo = FString();
+			SessionPtr->GetResolvedConnectString(SessionName,ConnectionInfo);
+			if (!ConnectionInfo.IsEmpty())
+			{
+				if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(),0))
+				{
+					PC->ClientTravel(ConnectionInfo,TRAVEL_Absolute);
+				}
+			}
+			SessionPtr->ClearOnJoinSessionCompleteDelegates(this);
 		}
 	}
 }

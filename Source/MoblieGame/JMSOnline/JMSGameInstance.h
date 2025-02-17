@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineSessionSettings.h"
 #include "Engine/GameInstance.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "JMSGameInstance.generated.h"
 
 class IOnlineSubsystem;
@@ -20,8 +22,14 @@ public:
 
 
 	virtual void Init() override;
-
+	
+	UFUNCTION(BlueprintCallable)
 	void Login();
+	
+		UFUNCTION(BlueprintCallable)
+		void Login2();
+
+	
 
 	void OnLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error);
 
@@ -43,9 +51,23 @@ public:
 
 	void OnReadFriendsListComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& ErrorStr);
 
-	// 친구 UI 표시
+	// 친구초대 UI 표시
 	UFUNCTION(BlueprintCallable)
-	void ShowUI();
+	void ShowInviteUI();
+
+	// 친구목록 UI 표시
+	UFUNCTION(BlueprintCallable)
+	void ShowFriendsUI();
+
+	// 세션찾기
+	UFUNCTION(BlueprintCallable)
+	void FindSessions();
+
+	void OnFindSessionsComplete(bool bWasSuccessful);
+	
+	TSharedPtr<FOnlineSessionSearch> SearchSetting;
+
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type JoinResult);
 
 protected:
 	// EOS 연결
