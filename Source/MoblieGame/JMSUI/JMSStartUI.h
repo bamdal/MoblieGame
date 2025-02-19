@@ -29,7 +29,10 @@ class MOBLIEGAME_API UJMSStartUI : public UUserWidget
 	FString ServerScriptName;
 
 	UPROPERTY(Config)
-	int BasePort;
+	int32 BasePort;
+
+	UPROPERTY(Config)
+	int32 MaxServers;
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(BindWidget))

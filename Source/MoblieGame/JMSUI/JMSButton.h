@@ -26,6 +26,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText SetTextBlock = FText::FromString("Set Text");
 
+	UFUNCTION(BlueprintCallable)
+	void SetText(FText Text){ SetTextBlock = Text; }
 protected:
 	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;

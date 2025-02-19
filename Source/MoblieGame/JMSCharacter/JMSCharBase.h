@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 
+#include "OnlineSessionSettings.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "JMSCharBase.generated.h"
 
 class UInputMappingContext;
@@ -53,4 +55,5 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
+	
 };
