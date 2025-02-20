@@ -3,156 +3,181 @@
 
 #include "JMSStartUI.h"
 
+#include "HttpModule.h"
 #include "JMSButton.h"
+#include "JMSServerListItem.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 #include "Components/Button.h"
+#include "Interfaces/IHttpResponse.h"
+#include "Json.h"
+#include "Components/VerticalBox.h"
+#include "Components/WidgetSwitcher.h"
 
 
 void UJMSStartUI::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	CreateSessionButton->JMSButton->OnClicked.AddDynamic(this,&ThisClass::OnCreateSession);
-	JoinSessionButton->JMSButton->OnClicked.AddDynamic(this,&ThisClass::OnJoinSession);
-	ExitButton->JMSButton->OnClicked.AddDynamic(this,&ThisClass::OnExitButton);
-
-	UE_LOG(LogTemp, Display, TEXT("ServerUsername: %s"), *ServerUsername);
-	UE_LOG(LogTemp, Display, TEXT("ServerIP: %s"), *ServerIP);
-	UE_LOG(LogTemp, Display, TEXT("ServerScriptPath: %s"), *ServerScriptPath);
-	UE_LOG(LogTemp, Display, TEXT("ServerScriptName: %s"), *ServerScriptName);
-	UE_LOG(LogTemp, Display, TEXT("BasePort: %d"), BasePort);
-
-}
-void UJMSStartUI::OnCreateSession()
-{
-	/*UE_LOG(LogTemp, Display, TEXT("OnCreateSession"));
-
-	// 🔥 사용 가능한 포트 찾기
-	FString FindPortCommand = FString::Printf(
-		TEXT("ssh %s@%s \"screen -ls | grep server_ | awk -F'_' '{print $2}' | sort -n\""),
-		*ServerUsername, *ServerIP
-	);
-	// cmd.exe를 사용하여 SSH 명령 실행
-	FString CmdLine = FString::Printf(TEXT("/C \"%s\""), *FindPortCommand);  // /C는 cmd 명령어가 끝난 후 종료되게 함
-
-	FString UsedPorts;
-	FString StdErr;
-	int32 ReturnCode;
-
-#if PLATFORM_WINDOWS
-	// PC 전용 모바일용도 만들어야함
-	FPlatformProcess::ExecProcess(TEXT("cmd.exe"), *CmdLine, &ReturnCode, &UsedPorts, &StdErr);
-
-	if (ReturnCode != 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to get used ports. Error: %s"), *StdErr);
-		return;
-	}
-#endif
-
-#if PLATFORM_ANDROID
-	// Android에서는 Runtime을 사용하여 명령어 실행
-	const FString Command = FString::Printf(TEXT("sh -c \"%s\""), *FindPortCommand);
-
-	// ExecProcess 사용을 피하고, Android에서 명령어 실행
-
-	jobject activity = AndroidApplication::GetGameActivity();
-	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
-	jmethodID Method = Env->GetMethodID(FAndroidApplication::FindJavaClass("com/epicgames/ue4/GameActivity"), "runShellCommand", "(Ljava/lang/String;)Ljava/lang/String;");
-	jstring jCommand = Env->NewStringUTF(*Command);
-
-	jstring result = (jstring)Env->CallObjectMethod(activity, Method, jCommand);
-
-	const char* nativeResult = Env->GetStringUTFChars(result, 0);
-	UsedPorts = FString(nativeResult);
-	StdErr = TEXT(""); // 에러 처리는 필요한 경우 추가
-
-	Env->ReleaseStringUTFChars(result, nativeResult);
-#endif
+	if (CreateSessionButton)
+		CreateSessionButton->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnCreateSession);
+	if (FindSessionButton)
+		FindSessionButton->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnFindSession);
+	if (DestroySessionButton)
+		DestroySessionButton->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnDestroySession);
+	if (ExitButton)
+		ExitButton->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnExitButton);
+	if (BackButton)
+		BackButton->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnBackButton);
+	if (BackButton2)
+		BackButton2->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnBackButton);
 	
 
+	// FHttpModule 가져와 저장
+	Http = &FHttpModule::Get();
+	
+}
 
-	// 🔥 사용 중인 포트 리스트 파싱
-	TArray<int32> UsedPortList;
-	TArray<FString> PortStrings;
-	UsedPorts.ParseIntoArrayLines(PortStrings);
+void UJMSStartUI::HttpCall(const FString& InURL, const FString& InVerb)
+{
+	// 요청 객체 생성
+	TSharedPtr<IHttpRequest> Request = Http->CreateRequest();
 
-	for (const FString& PortString : PortStrings)
+	// 요청완료 델리게이트 바인딩
+	Request->OnProcessRequestComplete().BindUObject(this,&UJMSStartUI::OnResponseReceived);
+	
+	// URL과 Get,Post 요청 메서드 설정, 요청 헤더 설정
+	Request->SetURL(InURL);
+	Request->SetVerb(InVerb);
+	Request->SetHeader("Content-Type", "application/json");
+
+	// 요청 전송
+	Request->ProcessRequest();
+
+	ServerLog(FString::Printf(TEXT("Http Call %s"),*InURL));
+}
+
+void UJMSStartUI::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+	if (!bWasSuccessful)
 	{
-		int32 Port = FCString::Atoi(*PortString);
-		UsedPortList.Add(Port);
+		ServerLog(TEXT("Http Request Response Failed"));
+		return;
+	}
+	// 응답 상태 코드를 가져온다.
+	int32 StatusCode = Response->GetResponseCode();
+
+	// 응답 본문을 문자열로 가져옴
+	FString ResponseContent = Response->GetContentAsString();
+
+	// 요청이 완료되었음을 출력
+	ServerLog(FString::Printf(TEXT("HTTP request completed. Status Code: %d, URL: %s"), StatusCode, *Request->GetURL()));
+	ServerLog(FString::Printf(TEXT("Response Content: %s"), *ResponseContent));
+
+	// Json 데이터를 파싱하기 위한 리더 객체
+	TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(ResponseContent);
+	
+	// Reader를 사용해 문자열을 파싱하고, 이를 FJsonObject로 변환한다.
+	FJsonSerializer::Deserialize(JsonReader,RefJson);
+
+	// CreateSession
+	if (RefJson->HasField(TEXT("port")))
+	{
+		ServerLog(FString::Printf(TEXT("Server: %s"), *RefJson->GetStringField(TEXT("port"))));
+		
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle,this,&UJMSStartUI::OnFindSession,3.0f,false);
 	}
 
-	// 🔥 다음 사용 가능한 포트 찾기
-	int32 NewPort = BasePort;
-
-	for (int i = 0; i < MaxServers; i++)
+	// FindSession
+	int32 LastIndex = RefJson->GetArrayField(TEXT("servers")).Num() -1;
+	if (RefJson->HasField(TEXT("servers")) && LastIndex > -1)
 	{
-		NewPort = BasePort + i;
-		if (!UsedPortList.Contains(NewPort))
+		if (ServerListVerticalBox)
+			ServerListVerticalBox->ClearChildren(); // 기존 목록 초기화
+		
+		int i = 0;
+		for (TSharedPtr<FJsonValue> Content : RefJson->GetArrayField(TEXT("servers")))
 		{
-			break;
+			i++;
+			if (Content.IsValid() &&  Content->Type == EJson::Number)
+			{
+				const int32 FindPort = static_cast<int>(Content->AsNumber());
+				ServerLog(FString::Printf(TEXT("Server: %d"),FindPort));
+				if (ServerListButton)
+				{
+					// UJMSServerListItem 위젯 생성
+					UJMSServerListItem* NewServerListItem = CreateWidget<UJMSServerListItem>(this, ServerListButton);
+					if (!NewServerListItem) continue;
+					NewServerListItem->SetSessionName(FindPort);
+					ServerListVerticalBox->AddChild(NewServerListItem);
+				}
+			
+			}
+			if (i >=LastIndex && WidgetSwitcher)
+			{
+				// 서버 조인버튼으로 이동
+				WidgetSwitcher->SetActiveWidgetIndex(2);
+			}		
 		}
 	}
-
-	// 🔥 실행할 맵 이름을 설정 (기본값: ThirdPersonMap)
-	FString SelectedMap = "ThirdPersonMap";  // 기본 맵
-	// 필요하면 UI에서 맵 선택 기능 추가 가능
-
-	// 🔥 SSH 명령어 생성 및 실행 (맵 이름도 전달)
-	FString StartServerCommand = FString::Printf(
-		TEXT("ssh %s@%s 'cd %s && screen -dmS server_%d ./%s %d %s'"),
-		*ServerUsername, *ServerIP, *ServerScriptPath, NewPort, *ServerScriptName, NewPort, *SelectedMap
-	);
-
-	FString StdOut;
-	FPlatformProcess::ExecProcess(TEXT("/bin/sh"), *StartServerCommand, &ReturnCode, &StdOut, &StdErr);
-
-	if (ReturnCode == 0)
+	else if (RefJson->HasField(TEXT("servers")))
 	{
-		UE_LOG(LogTemp, Display, TEXT("Server started successfully on port %d with map %s"), NewPort, *SelectedMap);
+		// 실패시 원래 화면으로 복귀
+		if (WidgetSwitcher)
+			WidgetSwitcher->SetActiveWidgetIndex(2);
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to start server on port %d. Error: %s"), NewPort, *StdErr);
-	}*/
+
+	// DestroySession
+	if (RefJson->HasField(TEXT("message")))
+		ServerLog(FString::Printf(TEXT("Server: %s"), *RefJson->GetStringField(TEXT("message"))));
+
 }
+
+void UJMSStartUI::OnCreateSession()
+{
+	if (WidgetSwitcher)
+		WidgetSwitcher->SetActiveWidgetIndex(1);
+	// 동시에 누르면 같은 스크린에 이름이 만들어져버림
+	FString Url = BaseURL+ServerIP+ServerResponsePort+ServerCreatePath;
+	HttpCall(Url, "GET");
+}
+
+void UJMSStartUI::OnFindSession()
+{
+	if (WidgetSwitcher)
+		WidgetSwitcher->SetActiveWidgetIndex(1);
+	FString Url = BaseURL+ServerIP+ServerResponsePort+ServerListPath;
+	HttpCall(Url, "GET");
+}
+
 
 
 void UJMSStartUI::OnJoinSession()
 {
-	/*UE_LOG(LogTemp, Display, TEXT("OnJoinSession"));
-
-	// 서버 리스트 (기본 포트에서 10개까지 검색)
-	TArray<int> ServerPorts;
-	for (int i = 0; i < 10; i++)
-	{
-		ServerPorts.Add(BasePort + i);
-	}
-
-	for (int Port : ServerPorts)
-	{
-		FString ServerAddress = FString::Printf(TEXT("%s:%d"), *ServerIP, Port);
-
-		UE_LOG(LogTemp, Display, TEXT("Trying to connect to: %s"), *ServerAddress);
-
-		// 언리얼 네트워크 접속 시도
-		APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
-		if (PlayerController)
-		{
-			PlayerController->ClientTravel(ServerAddress, ETravelType::TRAVEL_Absolute);
-			UE_LOG(LogTemp, Display, TEXT("Connected to server on port %d"), Port);
-			return;
-		}
-	}
-
-	// 접속 실패
-	UE_LOG(LogTemp, Error, TEXT("Failed to connect to any server."));*/
-
+	
 }
+
+void UJMSStartUI::OnDestroySession()
+{
+	FString DestroyPort = FString("/7777");
+	FString Url = BaseURL+ServerIP+ServerResponsePort+ServerDestroyPath+DestroyPort;
+	
+	HttpCall(Url, "GET");
+}
+
 
 
 void UJMSStartUI::OnExitButton()
 {
-	UE_LOG(LogTemp, Display, TEXT("OnExitButton"));
+	ServerLog(TEXT("OnExitButton"));
+}
+
+void UJMSStartUI::OnBackButton()
+{
+	if (WidgetSwitcher)
+		WidgetSwitcher->SetActiveWidgetIndex(0);
+}
+
+void UJMSStartUI::ServerLog_Implementation(const FString& Message)
+{
+	UE_LOG(LogTemp, Log, TEXT("%s"), *Message);
 }

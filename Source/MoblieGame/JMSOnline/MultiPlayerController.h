@@ -18,15 +18,21 @@ class MOBLIEGAME_API AMultiPlayerController : public APlayerController
 public:
 	AMultiPlayerController();
 
-	FUniqueNetIdPtr UserId;
+	FUniqueNetId* UserId;
 
 	
 	// 서버 찾기후 자동 세션 진입
 	UFUNCTION(BlueprintCallable)
-	void Login();
+	void Login(bool Lan);
 
 	UFUNCTION(BlueprintCallable)
-	void CreateSessionRequest();
+	void CreateSessionRequest(bool bIsLAN);
+
+	UFUNCTION(BlueprintCallable)
+	void FindSessionRequest(bool bIsLAN);
+	
+	UFUNCTION(BlueprintCallable)
+	void DestroySession(FName SessionName = TEXT(""));
 protected:
 
 	virtual void BeginPlay() override;
@@ -35,7 +41,17 @@ protected:
 	
 	// 서버에게 세션생성을 요청한다
 	UFUNCTION(Server, Reliable)
-	void ServerCreateSession();
+	void ServerCreateSession(bool Lan);
+
+	UFUNCTION(Server, Reliable)
+	void ServerFindSession(bool Lan);
+	
+	// 서버에게 세션생성을 요청한다
+	UFUNCTION(Server, Reliable)
+	void ServerDestroySession(FName SessionName);
+
+	UFUNCTION(Server, Reliable)
+	void ServerLog(FName LogText);
 
 	// 로그인 시도후 성공여부 판별
 	

@@ -32,3 +32,24 @@ void AMultiGameMode::CreateSession(FName KeyName, FString KeyValue)
 	}
 	
 }
+
+void AMultiGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+}
+
+APlayerController* AMultiGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal, const FString& Options,
+	const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	return Super::Login(NewPlayer, InRemoteRole, Portal, Options, UniqueId, ErrorMessage);
+}
+
+void AMultiGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+}
+
+void AMultiGameMode::StartPlay()
+{
+	Super::StartPlay();
+}

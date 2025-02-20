@@ -18,17 +18,22 @@ public:
 	AMultiGameSession();
 
 	// Hardcoding the max number of players in a session. 
-	const int MaxNumberOfPlayersInSession = 5;
+	const int MaxNumberOfPlayersInSession = 10;
 	
 	// Used to keep track if the session exists or not. 
 	bool bSessionExists = false;
 
+	UFUNCTION(Server, Reliable)
+	void ServerLog(FName LogText);
 	
 	FDelegateHandle CreateSessionDelegateHandle;
 	
 	// Function to create an Multi session.
 	UFUNCTION(BlueprintCallable)
-	void CreateSession(FName KeyName = "KeyName", FString KeyValue= "KeyValue");
+	void CreateSession(FName KeyName = "KeyName", FString KeyValue= "KeyValue",bool Lan=false);
 	
 	void HandleCreateSessionCompleted(FName MultiSessionName, bool bWasSuccessful);
+
+
+	
 };

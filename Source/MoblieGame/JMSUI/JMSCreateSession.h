@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "JMSCreateSession.generated.h"
 
+class UCheckBox;
 class UJMSButton;
 /**
  * 
@@ -21,6 +22,12 @@ public:
 	UPROPERTY(Meta = (BindWidget))
 	UJMSButton* FindSessionButton;
 
+	UPROPERTY(Meta = (BindWidget))
+	UJMSButton* DestroySessionButton;
+
+	UPROPERTY(Meta = (BindWidget))
+	UCheckBox* LANCheckBox;
+
 	virtual void NativeConstruct() override;
 	
 	UFUNCTION()
@@ -29,6 +36,8 @@ public:
 	UFUNCTION()
 	void OnFindSession();
 
+	UFUNCTION()
+	void OnDestroySession();
 	
 	
 };

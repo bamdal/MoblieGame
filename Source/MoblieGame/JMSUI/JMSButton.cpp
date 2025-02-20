@@ -13,6 +13,7 @@ void UJMSButton::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
+	if (JMSTextBlock)
 	JMSTextBlock->SetText(SetTextBlock);
 }
 

@@ -21,7 +21,13 @@ AMultiGameSession::AMultiGameSession()
 }
 
 
-void AMultiGameSession::CreateSession(FName KeyName, FString KeyValue) // Dedicated Server Only
+void AMultiGameSession::ServerLog_Implementation(FName LogText)
+{
+	UE_LOG(LogTemp, Log, TEXT("%s"), *LogText.ToString());
+
+}
+
+void AMultiGameSession::CreateSession(FName KeyName, FString KeyValue, bool Lan) // Dedicated Server Only
 {
     // Tutorial 3: This function will create an Multi Session.
  
@@ -40,7 +46,7 @@ void AMultiGameSession::CreateSession(FName KeyName, FString KeyValue) // Dedica
     TSharedRef<FOnlineSessionSettings> SessionSettings = MakeShared<FOnlineSessionSettings>();
     SessionSettings->NumPublicConnections = MaxNumberOfPlayersInSession; //We will test our sessions with 2 players to keep things simple
     SessionSettings->bShouldAdvertise = true; //This creates a public match and will be searchable. This will set the session as joinable via presence. 
-    SessionSettings->bUsesPresence = true;   //No presence on dedicated server. This requires a local user.
+    SessionSettings->bUsesPresence = false;   //No presence on dedicated server. This requires a local user.
     SessionSettings->bAllowJoinViaPresence = false; // superset by bShouldAdvertise and will be true on the backend
     SessionSettings->bAllowJoinViaPresenceFriendsOnly = false; // superset by bShouldAdvertise and will be true on the backend
     SessionSettings->bAllowInvites = false;    //Allow inviting players into session. This requires presence and a local user. 
@@ -49,10 +55,10 @@ void AMultiGameSession::CreateSession(FName KeyName, FString KeyValue) // Dedica
     SessionSettings->bUseLobbiesIfAvailable = false; //This is an Multi Session not an Multi Lobby as they aren't supported on Dedicated Servers.
     SessionSettings->bUseLobbiesVoiceChatIfAvailable = false;
     SessionSettings->bUsesStats = true; //Needed to keep track of player stats.
-	SessionSettings->bIsLANMatch=true;
+	SessionSettings->bIsLANMatch=Lan;
 
     // This custom attribute will be used in searches on GameClients. 
-    SessionSettings->Settings.Add(KeyName, FOnlineSessionSetting((KeyValue), EOnlineDataAdvertisementType::ViaOnlineService));
+   // SessionSettings->Settings.Add(KeyName, FOnlineSessionSetting((KeyValue), EOnlineDataAdvertisementType::ViaOnlineService));
 
     // Create session.
     UE_LOG(LogTemp, Log, TEXT("Creating session..."));
@@ -67,6 +73,9 @@ void AMultiGameSession::CreateSession(FName KeyName, FString KeyValue) // Dedica
     }
 }
 
+
+
+
 void AMultiGameSession::HandleCreateSessionCompleted(FName MultiSessionName, bool bWasSuccessful) // Dedicated Server Only
 {
 	// Tutorial 3: This function is triggered via the callback we set in CreateSession once the session is created (or there is a failure to create)
@@ -76,13 +85,21 @@ void AMultiGameSession::HandleCreateSessionCompleted(FName MultiSessionName, boo
 	// Nothing special here, simply log that the session is created.
 	if (bWasSuccessful)
 	{
-		bSessionExists = true; 
-		UE_LOG(LogTemp, Log, TEXT("Session: %s Created!"), *MultiSessionName.ToString());
+		bSessionExists = true;
+		ServerLog((TEXT("Session: %s Created!"), *MultiSessionName.ToString()));
 		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red,FString::Printf(TEXT("Session: %s Created"), *MultiSessionName.ToString()));
+
+		FNamedOnlineSession* SessionNamed = Session->GetNamedSession(SessionName);
+		if (SessionNamed && SessionNamed->SessionInfo.IsValid())
+		{
+			FString HostIP = SessionNamed->SessionInfo->GetSessionId().ToString();
+			ServerLog(*HostIP);
+		}
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Failed to create session!"));
+		ServerLog(TEXT("Failed to create session!"));
 		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, TEXT("Failed to create session"));
 	}
 

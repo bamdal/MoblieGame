@@ -11,7 +11,8 @@ public class MoblieGame : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
-			"OnlineSubsystem", "OnlineSubsystemUtils","OnlineSubsystemEOS","OnlineSubsystem" , "OnlineSubsystemUtils"
+			"OnlineSubsystem", "OnlineSubsystemUtils","OnlineSubsystemEOS","OnlineSubsystem" , "OnlineSubsystemUtils",
+			"HTTP", "Json"
 		});
 		
 		// 모바일용 패키징을 지원하는 경우
