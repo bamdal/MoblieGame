@@ -87,13 +87,13 @@ void UJMSStartUI::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr R
 	if (RefJson->HasField(TEXT("port")))
 	{
 		ServerLog(FString::Printf(TEXT("Server: %s"), *RefJson->GetStringField(TEXT("port"))));
-
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UJMSStartUI::OnFindSession, 4.0f, false);
+		
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UJMSStartUI::OnFindSession, 3.0f, false);
 	}
 
 	// FindSession or DestroySession
 	int32 LastIndex = RefJson->GetArrayField(TEXT("servers")).Num() - 1;
-	if (RefJson->HasField(TEXT("servers")) && LastIndex > -1)
+	if (RefJson->HasField(TEXT("servers")) && LastIndex > -1 &&!RefJson->HasField(TEXT("port")))
 	{
 		int i = 0;
 		for (TSharedPtr<FJsonValue> Content : RefJson->GetArrayField(TEXT("servers")))
@@ -139,8 +139,13 @@ void UJMSStartUI::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr R
 	}
 
 	// DestroySession
-	if (RefJson->HasField(TEXT("message")))
+	if (RefJson->HasField(TEXT("message")) && !RefJson->HasField(TEXT("port")))
+	{
 		ServerLog(FString::Printf(TEXT("Server: %s"), *RefJson->GetStringField(TEXT("message"))));
+		OnDestroySequenceSession();
+	}
+
+
 }
 
 void UJMSStartUI::OnCreateSession()
@@ -189,6 +194,7 @@ void UJMSStartUI::OnDestroySession(UJMSServerListItem* ClickedItem)
 void UJMSStartUI::OnExitButton()
 {
 	ServerLog(TEXT("OnExitButton"));
+	UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, true);
 }
 
 void UJMSStartUI::OnBackButton()
