@@ -12,6 +12,7 @@
 #include "Json.h"
 #include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
+#include "Kismet/GameplayStatics.h"
 
 
 void UJMSStartUI::NativeConstruct()
@@ -23,18 +24,17 @@ void UJMSStartUI::NativeConstruct()
 	if (FindSessionButton)
 		FindSessionButton->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnFindSession);
 	if (DestroySessionButton)
-		DestroySessionButton->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnDestroySession);
+		DestroySessionButton->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnDestroySequenceSession);
 	if (ExitButton)
 		ExitButton->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnExitButton);
 	if (BackButton)
 		BackButton->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnBackButton);
 	if (BackButton2)
 		BackButton2->JMSButton->OnClicked.AddDynamic(this, &ThisClass::OnBackButton);
-	
+
 
 	// FHttpModule 가져와 저장
 	Http = &FHttpModule::Get();
-	
 }
 
 void UJMSStartUI::HttpCall(const FString& InURL, const FString& InVerb)
@@ -43,8 +43,8 @@ void UJMSStartUI::HttpCall(const FString& InURL, const FString& InVerb)
 	TSharedPtr<IHttpRequest> Request = Http->CreateRequest();
 
 	// 요청완료 델리게이트 바인딩
-	Request->OnProcessRequestComplete().BindUObject(this,&UJMSStartUI::OnResponseReceived);
-	
+	Request->OnProcessRequestComplete().BindUObject(this, &UJMSStartUI::OnResponseReceived);
+
 	// URL과 Get,Post 요청 메서드 설정, 요청 헤더 설정
 	Request->SetURL(InURL);
 	Request->SetVerb(InVerb);
@@ -53,7 +53,7 @@ void UJMSStartUI::HttpCall(const FString& InURL, const FString& InVerb)
 	// 요청 전송
 	Request->ProcessRequest();
 
-	ServerLog(FString::Printf(TEXT("Http Call %s"),*InURL));
+	ServerLog(FString::Printf(TEXT("Http Call %s"), *InURL));
 }
 
 void UJMSStartUI::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
@@ -75,48 +75,60 @@ void UJMSStartUI::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr R
 
 	// Json 데이터를 파싱하기 위한 리더 객체
 	TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(ResponseContent);
-	
+
 	// Reader를 사용해 문자열을 파싱하고, 이를 FJsonObject로 변환한다.
-	FJsonSerializer::Deserialize(JsonReader,RefJson);
+	FJsonSerializer::Deserialize(JsonReader, RefJson);
+
+	if (ServerListVerticalBox)
+		ServerListVerticalBox->ClearChildren(); // 기존 목록 초기화
+
 
 	// CreateSession
 	if (RefJson->HasField(TEXT("port")))
 	{
 		ServerLog(FString::Printf(TEXT("Server: %s"), *RefJson->GetStringField(TEXT("port"))));
-		
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle,this,&UJMSStartUI::OnFindSession,3.0f,false);
+
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UJMSStartUI::OnFindSession, 4.0f, false);
 	}
 
-	// FindSession
-	int32 LastIndex = RefJson->GetArrayField(TEXT("servers")).Num() -1;
+	// FindSession or DestroySession
+	int32 LastIndex = RefJson->GetArrayField(TEXT("servers")).Num() - 1;
 	if (RefJson->HasField(TEXT("servers")) && LastIndex > -1)
 	{
-		if (ServerListVerticalBox)
-			ServerListVerticalBox->ClearChildren(); // 기존 목록 초기화
-		
 		int i = 0;
 		for (TSharedPtr<FJsonValue> Content : RefJson->GetArrayField(TEXT("servers")))
 		{
 			i++;
-			if (Content.IsValid() &&  Content->Type == EJson::Number)
+			if (Content.IsValid() && Content->Type == EJson::Number)
 			{
 				const int32 FindPort = static_cast<int>(Content->AsNumber());
-				ServerLog(FString::Printf(TEXT("Server: %d"),FindPort));
+				ServerLog(FString::Printf(TEXT("Server: %d"), FindPort));
 				if (ServerListButton)
 				{
-					// UJMSServerListItem 위젯 생성
 					UJMSServerListItem* NewServerListItem = CreateWidget<UJMSServerListItem>(this, ServerListButton);
 					if (!NewServerListItem) continue;
 					NewServerListItem->SetSessionName(FindPort);
 					ServerListVerticalBox->AddChild(NewServerListItem);
+					if (IsJoin)
+					{
+						// Join
+						NewServerListItem->OnJoinSessionDelegate.AddDynamic(this, &ThisClass::OnJoinSession);
+						NewServerListItem->SetAmountOfPlayerText(FString("Join Session"));
+					}
+					else
+					{
+						// Destroy
+						NewServerListItem->OnJoinSessionDelegate.AddDynamic(this, &ThisClass::OnDestroySession);
+						NewServerListItem->SetAmountOfPlayerText(FString("Destroy"));
+					}
+					// UJMSServerListItem 위젯 생성
 				}
-			
 			}
-			if (i >=LastIndex && WidgetSwitcher)
+			if (i >= LastIndex && WidgetSwitcher)
 			{
 				// 서버 조인버튼으로 이동
 				WidgetSwitcher->SetActiveWidgetIndex(2);
-			}		
+			}
 		}
 	}
 	else if (RefJson->HasField(TEXT("servers")))
@@ -129,7 +141,6 @@ void UJMSStartUI::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr R
 	// DestroySession
 	if (RefJson->HasField(TEXT("message")))
 		ServerLog(FString::Printf(TEXT("Server: %s"), *RefJson->GetStringField(TEXT("message"))));
-
 }
 
 void UJMSStartUI::OnCreateSession()
@@ -137,33 +148,42 @@ void UJMSStartUI::OnCreateSession()
 	if (WidgetSwitcher)
 		WidgetSwitcher->SetActiveWidgetIndex(1);
 	// 동시에 누르면 같은 스크린에 이름이 만들어져버림
-	FString Url = BaseURL+ServerIP+ServerResponsePort+ServerCreatePath;
+	FString Url = BaseURL + ServerIP + ServerResponsePort + ServerCreatePath;
 	HttpCall(Url, "GET");
 }
 
 void UJMSStartUI::OnFindSession()
 {
+	IsJoin = true;
 	if (WidgetSwitcher)
 		WidgetSwitcher->SetActiveWidgetIndex(1);
-	FString Url = BaseURL+ServerIP+ServerResponsePort+ServerListPath;
+	FString Url = BaseURL + ServerIP + ServerResponsePort + ServerListPath;
 	HttpCall(Url, "GET");
 }
 
 
-
-void UJMSStartUI::OnJoinSession()
+void UJMSStartUI::OnJoinSession(UJMSServerListItem* ClickedItem)
 {
-	
+	FString Address = FString::Printf(TEXT("%s:%d"), *ServerIP, ClickedItem->GetSessionPort());
+	UGameplayStatics::OpenLevel(this, FName(*Address));
 }
 
-void UJMSStartUI::OnDestroySession()
+void UJMSStartUI::OnDestroySequenceSession()
 {
-	FString DestroyPort = FString("/7777");
-	FString Url = BaseURL+ServerIP+ServerResponsePort+ServerDestroyPath+DestroyPort;
-	
+	IsJoin = false;
+	if (WidgetSwitcher)
+		WidgetSwitcher->SetActiveWidgetIndex(1);
+	FString Url = BaseURL + ServerIP + ServerResponsePort + ServerListPath;
 	HttpCall(Url, "GET");
 }
 
+void UJMSStartUI::OnDestroySession(UJMSServerListItem* ClickedItem)
+{
+	FString DestroyPort = FString::Printf(TEXT("/%d"),ClickedItem->GetSessionPort());
+	FString Url = BaseURL + ServerIP + ServerResponsePort + ServerDestroyPath + DestroyPort;
+
+	HttpCall(Url, "GET");
+}
 
 
 void UJMSStartUI::OnExitButton()

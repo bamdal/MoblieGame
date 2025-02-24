@@ -107,6 +107,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<UJMSServerListItem> ServerListButton;
 
+	// 서버 접속용인지 삭제용인지 구분
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool IsJoin =true;
 
 
 	FTimerHandle TimerHandle;
@@ -118,10 +121,15 @@ public:
 	void OnFindSession();
 
 	UFUNCTION()
-	void OnJoinSession();
+	void OnJoinSession(UJMSServerListItem* ClickedItem);
+
+	
 
 	UFUNCTION()
-	void OnDestroySession();
+	void OnDestroySequenceSession();
+
+	UFUNCTION()
+	void OnDestroySession(UJMSServerListItem* ClickedItem);
 
 	UFUNCTION()
 	void OnExitButton();
@@ -131,6 +139,8 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerLog(const FString& Message);
+
+	
 
 protected:
 	virtual void NativeConstruct() override;
