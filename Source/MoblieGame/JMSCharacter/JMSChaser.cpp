@@ -15,7 +15,7 @@ AJMSChaser::AJMSChaser()
 void AJMSChaser::BeginPlay()
 {
 	Super::BeginPlay();
-
+	bReplicates = true;
 	//HideSelfFromCamera();
 }
 

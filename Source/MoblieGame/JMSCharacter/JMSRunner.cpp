@@ -9,7 +9,7 @@
 AJMSRunner::AJMSRunner()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
+	bReplicates = true;
 	
 	GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 	GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -20.0f));
