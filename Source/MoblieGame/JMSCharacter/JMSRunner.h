@@ -15,6 +15,10 @@ class MOBLIEGAME_API AJMSRunner : public AJMSCharBase
 	GENERATED_BODY()
 public:
 	AJMSRunner();
+
+	virtual void BeginPlay() override;
+protected:
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	
 };

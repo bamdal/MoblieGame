@@ -6,6 +6,9 @@
 #include "EngineUtils.h"
 #include "JMSGamePlayController.h"
 #include "GameFramework/PlayerStart.h"
+#include "MoblieGame/ETC/JMSEnum.h"
+#include "MoblieGame/JMSDummy/JMSDummyButton.h"
+#include "Net/UnrealNetwork.h"
 
 
 void APlayGameMode::StartPlay()
@@ -13,19 +16,28 @@ void APlayGameMode::StartPlay()
 	// 처음 시작시 대기상태
 	bDelayedStart = true;
 	Super::StartPlay();
+
+
 }
 
 void APlayGameMode::PostLogin(APlayerController* NewPlayer)
 {
-	
 	Super::PostLogin(NewPlayer);
 
-    UE_LOG(LogTemp, Warning, TEXT("현재 MatchState : %s "),*GetMatchState().ToString());
+	UE_LOG(LogTemp, Warning, TEXT("현재 MatchState : %s "), *GetMatchState().ToString());
+
+	GetWorld()->GetTimerManager().SetTimerForNextTick([NewPlayer]()
+	{
+		FInputModeGameOnly InputMode;
+		NewPlayer->SetInputMode(InputMode);
+		NewPlayer->bShowMouseCursor = false; // 마우스 커서를 숨김
+
+	});
 	if (HasMatchStarted())
 	{
 		// 게임 시작중 진입하면 스펙터로 전환
 		NewPlayer->StartSpectatingOnly();
-        UE_LOG(LogTemp, Warning, TEXT("새 플레이어 %s 가 Spectator로 설정됨."),*NewPlayer->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("새 플레이어 %s 가 Spectator로 설정됨."), *NewPlayer->GetName());
 	}
 	else
 	{
@@ -33,14 +45,15 @@ void APlayGameMode::PostLogin(APlayerController* NewPlayer)
 		AllowCharacterSelection(NewPlayer);
 		UE_LOG(LogTemp, Warning, TEXT("새 플레이어가 캐릭터를 선택할 수 있음."));
 	}
+	
+
 }
+
 
 void APlayGameMode::AllowCharacterSelection(APlayerController* NewPlayer)
 {
-
 	if (NewPlayer)
 	{
-
 		AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(NewPlayer);
 		if (PC)
 		{
@@ -74,24 +87,23 @@ void APlayGameMode::AllowCharacterSelection(APlayerController* NewPlayer)
 
 							SpawnLocation = Start->GetActorLocation();
 							SpawnRotation = Start->GetActorRotation();
-							break;  // 첫 번째 찾은 PlayerStart 사용
+							break; // 첫 번째 찾은 PlayerStart 사용
 						}
 					}
 				}
-				
-	
-				
+
+
 				// PlayerStart를 찾지 못하면 기본 위치 사용
 				if (SpawnLocation.IsZero())
 				{
 					UE_LOG(LogTemp, Warning, TEXT("SpawnPoint 태그가 있는 PlayerStart를 찾지 못함. 기본 위치 사용."));
-					SpawnLocation = FVector(0, 0, 300);  // 기본 스폰 위치
+					SpawnLocation = FVector(0, 0, 300); // 기본 스폰 위치
 				}
 
 
 				// Pawn 스폰
 				APawn* TempPawn = GetWorld()->SpawnActor<APawn>(DefaultPawnClass, SpawnLocation, SpawnRotation, SpawnParams);
-                
+
 				if (TempPawn)
 				{
 					// 플레이어가 새 Pawn을 조종하도록 설정
@@ -110,3 +122,4 @@ void APlayGameMode::AllowCharacterSelection(APlayerController* NewPlayer)
 		}
 	}
 }
+

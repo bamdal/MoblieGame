@@ -36,6 +36,8 @@ public:
 
 	// 술래면 true
 	virtual bool DummyButtonClick_Implementation(AJMSCharBase* Char) override;
+
+	virtual enum DummyState GetDummyCharacterState_Implementation() override;
 	
 
 	

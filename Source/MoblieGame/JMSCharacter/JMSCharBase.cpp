@@ -44,6 +44,13 @@ void AJMSCharBase::BeginPlay()
 {
 	Super::BeginPlay();
 	CameraBoom->ProbeSize = 12.0f;
+	ApplyInputMappingContext();
+}
+
+void AJMSCharBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	ApplyInputMappingContext();
 }
 
 
@@ -114,4 +121,31 @@ void AJMSCharBase::Move(const FInputActionValue& Value)
 		
 	}
 	
+}
+
+void AJMSCharBase::ApplyInputMappingContext()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC)
+	{
+		UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
+			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
+
+		if (InputSubsystem)
+		{
+			// 기존 IMC 제거
+			InputSubsystem->ClearAllMappings();
+
+			// 올바른 IMC 적용 (BP에서 설정한 값 사용)
+			if (IMC_Asset)
+			{
+				InputSubsystem->AddMappingContext(IMC_Asset, 0);
+				
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("%s: IMC is NULL!"), *GetName());
+			}
+		}
+	}
 }

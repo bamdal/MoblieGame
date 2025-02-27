@@ -7,6 +7,7 @@
 
 #include "ButtonClickInterface.generated.h"
 
+enum class DummyState : uint8;
 class AJMSCharBase;
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
@@ -28,4 +29,7 @@ public:
 	// 술래라면 true 리턴 아니면 false
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	bool DummyButtonClick(AJMSCharBase* Char);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	DummyState GetDummyCharacterState();
 };

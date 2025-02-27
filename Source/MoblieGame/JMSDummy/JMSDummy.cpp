@@ -36,6 +36,12 @@ bool AJMSDummy::DummyButtonClick_Implementation(AJMSCharBase* Char)
 		uint8 Index = static_cast<uint8>(DummyState);
 
 		PC->Server_RequestResponseCharacter(PlayerCharacters[Index],Char->GetActorLocation());
+
 	}
 	return DummyState == DummyState::Chaser;
+}
+
+DummyState AJMSDummy::GetDummyCharacterState_Implementation()
+{
+	return DummyState;
 }

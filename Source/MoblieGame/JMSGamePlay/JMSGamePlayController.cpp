@@ -3,14 +3,15 @@
 
 #include "JMSGamePlayController.h"
 
-#include "MoblieGame/ETC/JMSEnum.h"
+#include "EngineUtils.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "MoblieGame/JMSCharacter/JMSCharBase.h"
+#include "Net/UnrealNetwork.h"
 
 
 void AJMSGamePlayController::Server_RequestResponseCharacter_Implementation(TSubclassOf<AJMSCharBase> Char, FVector Location)
 {
 	Multicast_UpdateResponseCharacter(Char, Location);
-	UE_LOG(LogTemp, Warning, TEXT("AJMSDummy::Server_RequestResponseCharacter_Implementation"));
 }
 
 bool AJMSGamePlayController::Server_RequestResponseCharacter_Validate(TSubclassOf<AJMSCharBase> Char, FVector Location)
@@ -29,27 +30,86 @@ void AJMSGamePlayController::Multicast_UpdateResponseCharacter_Implementation(TS
 		return;
 	if (HasAuthority())
 	{
+		FRotator NewRotation = GetPawn()->GetControlRotation();
 		UnPossess();
-		Possess(GetWorld()->SpawnActor<AJMSCharBase>(Char, Location, FRotator(0, 0, 0), SpawnParams));
+		Possess(GetWorld()->SpawnActor<AJMSCharBase>(Char, Location, NewRotation, SpawnParams));
 		OldNonePawn->Destroy();
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *GetPawn()->GetName());
-
 	if (GetPawn())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("New Pawn is possessed: %s"), *GetPawn()->GetName());
-		if (GetPawn()->InputComponent)
+		ClientRestart(GetPawn());
+
+		// Possess 후 MovementComponent 체크
+		UCharacterMovementComponent* MoveComp = Cast<UCharacterMovementComponent>(GetPawn()->GetMovementComponent());
+		if (MoveComp)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("InputComponent is valid"));
+			MoveComp->SetMovementMode(MOVE_Walking);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("InputComponent is missing!"));
+			UE_LOG(LogTemp, Error, TEXT("New Pawn has no valid MovementComponent!"));
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("No pawn is possessed"));
+		UE_LOG(LogTemp, Error, TEXT("Failed to possess new character"));
 	}
+}
+
+
+void AJMSGamePlayController::Server_RequestButtonActive_Implementation(DummyState DummyCharacterState)
+{
+	if (DummyCharacterState == DummyState::Chaser)
+	{
+		for (auto Element : Buttons)
+		{
+
+			if (Element->GetDummyCharacterState() == DummyState::Chaser)
+			{
+
+				Element->UpdateButtonState(EButtonState::Disabled);
+				break;
+			}
+		}
+	}
+}
+
+bool AJMSGamePlayController::Server_RequestButtonActive_Validate(DummyState DummyCharacterState)
+{
+	return true;
+}
+
+void AJMSGamePlayController::Server_RequestChaserButtonReset_Implementation()
+{
+	for (auto Element : Buttons)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Chaser button reset"));
+		Element->ResetChaserButtonState();
+	}
+}
+
+void AJMSGamePlayController::OnRep_DummyButtons()
+{
+}
+
+void AJMSGamePlayController::BeginPlay()
+{
+	Super::BeginPlay();
+
+
+	if (HasAuthority())
+	{
+		for (TActorIterator<AJMSDummyButton> It(GetWorld()); It; ++It)
+		{
+			Buttons.Add(*It);
+		}
+	}
+}
+
+void AJMSGamePlayController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AJMSGamePlayController, Buttons);
+	DOREPLIFETIME(AJMSGamePlayController, PlayerGameRoleState);
 }

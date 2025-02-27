@@ -7,6 +7,8 @@ enum class DummyState : uint8
 	Runner_Duck =1,
 	Runner_Deer =2,
 	Runner_Statue =3,
+	Runner_None =4,
+	
 };
 
 UENUM(BlueprintType)

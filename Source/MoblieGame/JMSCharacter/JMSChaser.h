@@ -38,11 +38,16 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_ShouldTurnBody)
 	bool bShouldTurnBody;
 
-	UPROPERTY(ReplicatedUsing=OnRep_UpdateRotation)
-	FRotator ReplicatedRotation;
+
+	UPROPERTY(ReplicatedUsing = OnRep_TargetYawRotation)
+	FRotator TargetYawRotation;
+	
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Rotation")
 	float BodyTurnSpeed = 5.0f;
+
+	UPROPERTY()
+	float LastRotationUpdateTime;
 
 	UFUNCTION()
 	void OnRep_HeadYaw();
@@ -50,15 +55,20 @@ public:
 	UFUNCTION()
 	void OnRep_ShouldTurnBody();
 
+	UFUNCTION()
+	void OnRep_TargetYawRotation();
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerUpdateHeadYaw(float NewHeadYaw, bool bNewShouldTurnBody);
 
-	private:
-    UFUNCTION(Server, Reliable, WithValidation)
-    void ServerSetRotation(FRotator NewRotation);
 
-    UFUNCTION()
-    void OnRep_UpdateRotation();
+private:
+    UFUNCTION(Server, Reliable, WithValidation)
+    void ServerSetTargetYaw(FRotator NewRotation);
+   
+
+
+	
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

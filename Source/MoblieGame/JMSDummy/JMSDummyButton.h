@@ -4,16 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "MoblieGame/ETC/JMSEnum.h"
 #include "JMSDummyButton.generated.h"
 
+enum class DummyState : uint8;
 class AJMSGamePlayController;
 enum class EButtonState : uint8;
 
 UCLASS()
 class MOBLIEGAME_API AJMSDummyButton : public AActor
 {
+private:
 	GENERATED_BODY()
-	
+
 public:
 	// Sets default values for this actor's properties
 	AJMSDummyButton();
@@ -38,10 +41,35 @@ public:
 	TObjectPtr<UMaterialInterface> DisableButtonMaterial;
 
 
+private:
 	// 버튼 상태 관리
+	UPROPERTY(ReplicatedUsing = OnRep_DummyButtonState)
+	EButtonState DummyButtonState;
+
 	UPROPERTY()
-	EButtonState ButtonState;
+	AJMSGamePlayController* NewPlayer;
 	
+	// 버튼의 부모가 가지고 있던 상태
+	UPROPERTY()
+	DummyState DummyCharacterState = DummyState::Chaser;
+	
+
+public:
+	[[nodiscard]] EButtonState GetDummyButtonState() const
+	{
+		return DummyButtonState;
+	}
+
+	[[nodiscard]] DummyState GetDummyCharacterState() const;
+
+	void SetDummyButtonState(EButtonState NewDummyButtonState)
+	{
+		this->DummyButtonState = NewDummyButtonState;
+	}
+
+	UFUNCTION()
+	void OnRep_DummyButtonState();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -52,16 +80,19 @@ public:
 
 
 protected:
-
 	UFUNCTION()
 	void OnComponentHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
+public:
 	// 버튼 상태 변경
 	UFUNCTION()
 	void UpdateButtonState(EButtonState NewState, AJMSGamePlayController* Player=nullptr);
 
+	UFUNCTION()
+	void ResetButtonState();
 
-private:
-	static AJMSDummyButton* CurrentChaserButton;  // 현재 술래 버튼 (전역적으로 한 개만 존재)
+	UFUNCTION()
+	void ResetChaserButtonState();
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };
 

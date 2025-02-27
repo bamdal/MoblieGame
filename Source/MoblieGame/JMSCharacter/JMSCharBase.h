@@ -43,12 +43,15 @@ public:
 	void Move(const FInputActionValue& Value);
 	// IMC & IA ----------------------------------------------------
 
-	
+	void ApplyInputMappingContext();
+
 public:
 	AJMSCharBase();
 
 protected:
 	virtual void BeginPlay() override;
+
+	virtual void PossessedBy(AController* NewController) override;
 	
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
