@@ -4,6 +4,9 @@
 #include "JMSGamePlayController.h"
 
 #include "EngineUtils.h"
+#include "JMSMultiGameInstance.h"
+#include "JMSMultiPlayerState.h"
+#include "Blueprint/UserWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "MoblieGame/JMSCharacter/JMSCharBase.h"
 #include "Net/UnrealNetwork.h"
@@ -58,16 +61,14 @@ void AJMSGamePlayController::Multicast_UpdateResponseCharacter_Implementation(TS
 }
 
 
-void AJMSGamePlayController::Server_RequestButtonActive_Implementation(DummyState DummyCharacterState)
+void AJMSGamePlayController::Server_RequestButtonActive_Implementation(EDummyState DummyCharacterState)
 {
-	if (DummyCharacterState == DummyState::Chaser)
+	if (DummyCharacterState == EDummyState::Chaser)
 	{
 		for (auto Element : Buttons)
 		{
-
-			if (Element->GetDummyCharacterState() == DummyState::Chaser)
+			if (Element->GetDummyCharacterState() == EDummyState::Chaser)
 			{
-
 				Element->UpdateButtonState(EButtonState::Disabled);
 				break;
 			}
@@ -75,7 +76,7 @@ void AJMSGamePlayController::Server_RequestButtonActive_Implementation(DummyStat
 	}
 }
 
-bool AJMSGamePlayController::Server_RequestButtonActive_Validate(DummyState DummyCharacterState)
+bool AJMSGamePlayController::Server_RequestButtonActive_Validate(EDummyState DummyCharacterState)
 {
 	return true;
 }
@@ -93,11 +94,42 @@ void AJMSGamePlayController::OnRep_DummyButtons()
 {
 }
 
+void AJMSGamePlayController::ServerLogOut()
+{
+	AJMSMultiPlayerState* PS = GetPlayerState<AJMSMultiPlayerState>();
+	if (PS->PlayerCharacterRoleState == EDummyState::Chaser)
+	{
+		// 종료될시 술래라면 버튼 롤백
+		Server_RequestChaserButtonReset();
+	}
+}
+
+void AJMSGamePlayController::SetHUD(TSubclassOf<UUserWidget> Widget)
+{
+
+
+	UUserWidget* NewWidget = CreateWidget<UUserWidget>(GetWorld(), Widget);
+	
+	if (NewWidget != nullptr)
+	{
+		ActiveWidgetArray.Add(NewWidget);
+		NewWidget->AddToViewport();
+	}
+}
+
+
+void AJMSGamePlayController::ClearUI()
+{
+	for (auto Element : 	ActiveWidgetArray)
+	{
+		Element->RemoveFromParent();
+	}
+}
+
 void AJMSGamePlayController::BeginPlay()
 {
 	Super::BeginPlay();
-
-
+	
 	if (HasAuthority())
 	{
 		for (TActorIterator<AJMSDummyButton> It(GetWorld()); It; ++It)
@@ -105,11 +137,29 @@ void AJMSGamePlayController::BeginPlay()
 			Buttons.Add(*It);
 		}
 	}
+
+	if (GetWorld()->GetMapName().Contains("Lobby"))
+	{
+		SetHUD(LobbyHUD);
+	}
+	else if (GetWorld()->GetMapName().Contains("Battle"))
+	{
+		//MainWidget = BattleHUD;
+	}	
 }
+
+void AJMSGamePlayController::Destroyed()
+{
+
+	ClearUI();
+	
+	Super::Destroyed();
+	
+}
+
 
 void AJMSGamePlayController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AJMSGamePlayController, Buttons);
-	DOREPLIFETIME(AJMSGamePlayController, PlayerGameRoleState);
 }

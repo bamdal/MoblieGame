@@ -9,7 +9,7 @@
 
 
 class AJMSCharBase;
-enum class DummyState : uint8;
+enum class EDummyState : uint8;
 
 UCLASS()
 class MOBLIEGAME_API AJMSDummy : public AActor, public IButtonClickInterface
@@ -21,7 +21,7 @@ public:
 	AJMSDummy();
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "JMSDummy")
-	DummyState DummyState;
+	EDummyState DummyState;
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "JMSDummy")
 	TArray<TSubclassOf<AJMSCharBase>> PlayerCharacters;
@@ -37,7 +37,8 @@ public:
 	// 술래면 true
 	virtual bool DummyButtonClick_Implementation(AJMSCharBase* Char) override;
 
-	virtual enum DummyState GetDummyCharacterState_Implementation() override;
+	// enum class 하니 리눅스 컴파일 오류
+	virtual enum EDummyState GetDummyCharacterState_Implementation() override;
 	
 
 	

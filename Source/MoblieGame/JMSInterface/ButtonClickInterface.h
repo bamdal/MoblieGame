@@ -7,7 +7,7 @@
 
 #include "ButtonClickInterface.generated.h"
 
-enum class DummyState : uint8;
+enum class EDummyState : uint8;
 class AJMSCharBase;
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
@@ -31,5 +31,5 @@ public:
 	bool DummyButtonClick(AJMSCharBase* Char);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	DummyState GetDummyCharacterState();
+	EDummyState GetDummyCharacterState();
 };

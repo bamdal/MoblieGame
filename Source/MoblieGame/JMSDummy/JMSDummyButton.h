@@ -7,7 +7,7 @@
 #include "MoblieGame/ETC/JMSEnum.h"
 #include "JMSDummyButton.generated.h"
 
-enum class DummyState : uint8;
+enum class EDummyState : uint8;
 class AJMSGamePlayController;
 enum class EButtonState : uint8;
 
@@ -51,7 +51,7 @@ private:
 	
 	// 버튼의 부모가 가지고 있던 상태
 	UPROPERTY()
-	DummyState DummyCharacterState = DummyState::Chaser;
+	EDummyState DummyCharacterState = EDummyState::Chaser;
 	
 
 public:
@@ -60,7 +60,7 @@ public:
 		return DummyButtonState;
 	}
 
-	[[nodiscard]] DummyState GetDummyCharacterState() const;
+	[[nodiscard]] EDummyState GetDummyCharacterState() const;
 
 	void SetDummyButtonState(EButtonState NewDummyButtonState)
 	{

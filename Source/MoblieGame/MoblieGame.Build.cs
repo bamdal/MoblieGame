@@ -12,7 +12,7 @@ public class MoblieGame : ModuleRules
 		{
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
 			"OnlineSubsystem", "OnlineSubsystemUtils","OnlineSubsystemEOS","OnlineSubsystem" , "OnlineSubsystemUtils",
-			"HTTP", "Json"
+			"HTTP", "Json","UMG"
 		});
 		
 		// 모바일용 패키징을 지원하는 경우

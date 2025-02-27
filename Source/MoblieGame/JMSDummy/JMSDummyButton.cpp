@@ -7,6 +7,7 @@
 #include "MoblieGame/ETC/JMSEnum.h"
 #include "MoblieGame/JMSCharacter/JMSCharBase.h"
 #include "MoblieGame/JMSGamePlay/JMSGamePlayController.h"
+#include "MoblieGame/JMSGamePlay/JMSMultiPlayerState.h"
 #include "MoblieGame/JMSInterface/ButtonClickInterface.h"
 #include "Net/UnrealNetwork.h"
 
@@ -35,7 +36,7 @@ AJMSDummyButton::AJMSDummyButton()
 	DummyButtonState = EButtonState::Normal;
 }
 
-DummyState AJMSDummyButton::GetDummyCharacterState() const
+EDummyState AJMSDummyButton::GetDummyCharacterState() const
 {
 	return DummyCharacterState;
 }
@@ -127,21 +128,26 @@ void AJMSDummyButton::OnComponentHit(UPrimitiveComponent* HitComponent, AActor* 
 	// 플레이어가 닿으면 해당 캐릭터로 변환
 	UE_LOG(LogTemp, Warning, TEXT("버튼 닿음"));
 
-		AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(OtherActor->GetInstigatorController());
-		if (PC && DummyCharacterState != PC->PlayerGameRoleState)
+	AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(OtherActor->GetInstigatorController());
+	if (PC)
+	{
+		AJMSMultiPlayerState* PS = PC->GetPlayerState<AJMSMultiPlayerState>();
+		if (PS)
 		{
-
-			UE_LOG(LogTemp, Warning, TEXT("PC처리"));
-
-			if (PC->PlayerGameRoleState==DummyState::Chaser)
+			if (DummyCharacterState != PS->PlayerCharacterRoleState)
 			{
-				PC->Server_RequestChaserButtonReset();
-			}
+				UE_LOG(LogTemp, Warning, TEXT("PC처리"));
 
-			UpdateButtonState(EButtonState::Selected, PC);
-			PC->PlayerGameRoleState = DummyCharacterState;
+				if (PS->PlayerCharacterRoleState == EDummyState::Chaser)
+				{
+					PC->Server_RequestChaserButtonReset();
+				}
+
+				UpdateButtonState(EButtonState::Selected, PC);
+				PS->PlayerCharacterRoleState = DummyCharacterState;
+			}
 		}
-	
+	}
 }
 
 void AJMSDummyButton::UpdateButtonState(EButtonState NewState, AJMSGamePlayController* Player)
@@ -161,7 +167,7 @@ void AJMSDummyButton::ResetButtonState()
 
 void AJMSDummyButton::ResetChaserButtonState()
 {
-	if (DummyCharacterState == DummyState::Chaser)
+	if (DummyCharacterState == EDummyState::Chaser)
 	{
 		ResetButtonState();
 	}

@@ -38,10 +38,10 @@ bool AJMSDummy::DummyButtonClick_Implementation(AJMSCharBase* Char)
 		PC->Server_RequestResponseCharacter(PlayerCharacters[Index],Char->GetActorLocation());
 
 	}
-	return DummyState == DummyState::Chaser;
+	return DummyState == EDummyState::Chaser;
 }
 
-DummyState AJMSDummy::GetDummyCharacterState_Implementation()
+EDummyState AJMSDummy::GetDummyCharacterState_Implementation()
 {
 	return DummyState;
 }

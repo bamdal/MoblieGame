@@ -5,11 +5,18 @@
 
 #include "EngineUtils.h"
 #include "JMSGamePlayController.h"
+#include "JMSMultiGameInstance.h"
+#include "JMSMultiGameState.h"
 #include "GameFramework/PlayerStart.h"
-#include "MoblieGame/ETC/JMSEnum.h"
-#include "MoblieGame/JMSDummy/JMSDummyButton.h"
-#include "Net/UnrealNetwork.h"
+#include "Blueprint/UserWidget.h"
 
+
+
+void APlayGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+
+}
 
 void APlayGameMode::StartPlay()
 {
@@ -45,8 +52,45 @@ void APlayGameMode::PostLogin(APlayerController* NewPlayer)
 		AllowCharacterSelection(NewPlayer);
 		UE_LOG(LogTemp, Warning, TEXT("새 플레이어가 캐릭터를 선택할 수 있음."));
 	}
+
+	// 전체인원수 갱신
+	// GameState 가져오기
+	AJMSMultiGameState* GS = GetGameState<AJMSMultiGameState>();
+	if (GS)
+	{
+		GS->UpdatePlayerCount();
+	}
+
+
+
+}
+
+
+void APlayGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
 	
 
+}
+void APlayGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	if (AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(Exiting))
+	{
+		PC->ServerLogOut();
+		UE_LOG(LogTemp,Warning,TEXT("Player Logged out : %s"), *PC->GetName());
+		
+	}
+
+	// 전체 인원수 갱신
+	// GameState 가져오기
+	AJMSMultiGameState* GS = GetGameState<AJMSMultiGameState>();
+	if (GS)
+	{
+		GS->UpdatePlayerCount();
+	}
 }
 
 
@@ -123,3 +167,7 @@ void APlayGameMode::AllowCharacterSelection(APlayerController* NewPlayer)
 	}
 }
 
+int32 APlayGameMode::GetCurrentPlayerCount()
+{
+	return GetNumPlayers();
+}

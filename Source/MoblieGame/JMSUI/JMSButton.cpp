@@ -2,8 +2,7 @@
 
 
 #include "JMSButton.h"
-
-#include "Components/Button.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 
 
@@ -15,6 +14,13 @@ void UJMSButton::NativePreConstruct()
 
 	if (JMSTextBlock)
 	JMSTextBlock->SetText(SetTextBlock);
+
+	FSlateFontInfo FontInfo = JMSTextBlock->GetFont();
+	FontInfo.Size = TextSize;
+	JMSTextBlock->SetFont(FontInfo);
+	
+	SizeBox->SetWidthOverride(SizeX);
+	SizeBox->SetHeightOverride(SizeY);
 }
 
 void UJMSButton::NativeConstruct()

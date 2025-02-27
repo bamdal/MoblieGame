@@ -8,7 +8,7 @@
 #include "JMSGamePlayController.generated.h"
 
 
-
+class UJMSMultiGameInstance;
 class AJMSCharBase;
 /**
  * 
@@ -21,9 +21,7 @@ class MOBLIEGAME_API AJMSGamePlayController : public APlayerController
 
 public:
 
-	UPROPERTY(Replicated, EditAnywhere,BlueprintReadWrite)
-	DummyState PlayerGameRoleState = DummyState::Runner_None;
-	
+
 	// 서버 RPC (서버에 캐릭터 스폰하라 알림)
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestResponseCharacter(TSubclassOf<AJMSCharBase> Char,FVector Location);
@@ -35,8 +33,9 @@ public:
 
 	// 서버 RPC (서버에 버튼 색상 변경하라 알림)
 	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_RequestButtonActive(DummyState DummyCharacterState);
+	void Server_RequestButtonActive(EDummyState DummyCharacterState);
 
+	// 추적자였다가 Runner전환시 버튼 롤백용 함수
 	UFUNCTION(Server, Reliable)
 	void Server_RequestChaserButtonReset();
 public:
@@ -46,7 +45,37 @@ public:
 	UFUNCTION()
 	void OnRep_DummyButtons();
 
+	UFUNCTION()
+	void ServerLogOut();
+
+	// UI생성
+	UFUNCTION()
+	void SetHUD(TSubclassOf<UUserWidget> Widget);
+
+	// 해당 맵에 사용할 UI
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	TSubclassOf<UUserWidget> LobbyHUD;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	TSubclassOf<UUserWidget> BattleHUD;
+
+	//소환된 UI
+	UPROPERTY()
+	TArray<UUserWidget*> ActiveWidgetArray;
+
+	UFUNCTION()
+	void ClearUI();
+private:
+	UPROPERTY()
+	TSubclassOf<UUserWidget> NewHUD;
+
+	UPROPERTY()
+	UJMSMultiGameInstance* GI;
 protected:
+
+	
+	
 	virtual void BeginPlay() override;
+
+	virtual void Destroyed() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };
