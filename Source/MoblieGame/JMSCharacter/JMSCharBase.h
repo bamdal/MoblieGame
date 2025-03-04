@@ -38,9 +38,16 @@ public:
 	UInputAction* IA_Move;
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* IA_Jump;
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* IA_ESC;
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* IA_PlayStart;
+
 
 	void Look(const FInputActionValue& Value);
 	void Move(const FInputActionValue& Value);
+	void ExitGame(const FInputActionValue& InputActionValue);
+	void PlayStart(const FInputActionValue& InputActionValue);
 	// IMC & IA ----------------------------------------------------
 
 	void ApplyInputMappingContext();
@@ -52,7 +59,10 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void PossessedBy(AController* NewController) override;
-	
+
+
+
+
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 public:	

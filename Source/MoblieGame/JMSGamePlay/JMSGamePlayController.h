@@ -48,20 +48,32 @@ public:
 	UFUNCTION()
 	void ServerLogOut();
 
-	// UI생성
-	UFUNCTION()
-	void SetHUD(TSubclassOf<UUserWidget> Widget);
-
 	// 해당 맵에 사용할 UI
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TSubclassOf<UUserWidget> LobbyHUD;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TSubclassOf<UUserWidget> BattleHUD;
+	
 
 	//소환된 UI
 	UPROPERTY()
 	TArray<UUserWidget*> ActiveWidgetArray;
 
+	// UI생성
+	UFUNCTION()
+	void SetHUD(TSubclassOf<UUserWidget> Widget);
+
+	// UI TEXT 수정
+	UFUNCTION()
+	void SetCountPlayerUI(int32 CurrentUser);
+	UFUNCTION()
+	void SetChaserStatusUI(int32 TotalChaserStatus);
+	UFUNCTION()
+	void SetRunnerCountUI(int32 RunnerCount);
+	UFUNCTION()
+	void SetCanStartUI(bool CanStart);
+	
+	//UI 삭제
 	UFUNCTION()
 	void ClearUI();
 private:

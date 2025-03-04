@@ -134,17 +134,17 @@ void AJMSDummyButton::OnComponentHit(UPrimitiveComponent* HitComponent, AActor* 
 		AJMSMultiPlayerState* PS = PC->GetPlayerState<AJMSMultiPlayerState>();
 		if (PS)
 		{
-			if (DummyCharacterState != PS->PlayerCharacterRoleState)
+			if (DummyCharacterState != PS->GetPlayerCharacterRoleState())
 			{
 				UE_LOG(LogTemp, Warning, TEXT("PC처리"));
 
-				if (PS->PlayerCharacterRoleState == EDummyState::Chaser)
+				if (PS->GetPlayerCharacterRoleState() == EDummyState::Chaser)
 				{
 					PC->Server_RequestChaserButtonReset();
 				}
 
 				UpdateButtonState(EButtonState::Selected, PC);
-				PS->PlayerCharacterRoleState = DummyCharacterState;
+				PS->SetPlayerCharacterRoleState(DummyCharacterState);
 			}
 		}
 	}

@@ -9,6 +9,7 @@
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "MoblieGame/JMSCharacter/JMSCharBase.h"
+#include "MoblieGame/JMSInterface/LobbyHUDInterface.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -97,11 +98,14 @@ void AJMSGamePlayController::OnRep_DummyButtons()
 void AJMSGamePlayController::ServerLogOut()
 {
 	AJMSMultiPlayerState* PS = GetPlayerState<AJMSMultiPlayerState>();
-	if (PS->PlayerCharacterRoleState == EDummyState::Chaser)
+	if (PS->GetPlayerCharacterRoleState() == EDummyState::Chaser)
 	{
 		// 종료될시 술래라면 버튼 롤백
 		Server_RequestChaserButtonReset();
 	}
+	
+	// 다시 역할 반납
+	PS->SetPlayerCharacterRoleState(EDummyState::Runner_None);
 }
 
 void AJMSGamePlayController::SetHUD(TSubclassOf<UUserWidget> Widget)
@@ -114,6 +118,50 @@ void AJMSGamePlayController::SetHUD(TSubclassOf<UUserWidget> Widget)
 	{
 		ActiveWidgetArray.Add(NewWidget);
 		NewWidget->AddToViewport();
+	}
+}
+
+void AJMSGamePlayController::SetCountPlayerUI(int32 CurrentUser)
+{
+	for (UUserWidget* Widget : ActiveWidgetArray)
+	{
+		if(Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
+		{
+			ILobbyHUDInterface::Execute_SetTextToTextBlock_TotalPlayers(Widget,CurrentUser);
+		}
+	}
+}
+
+void AJMSGamePlayController::SetChaserStatusUI(int32 TotalChaserStatus)
+{
+	for (UUserWidget* Widget : ActiveWidgetArray)
+	{
+		if(Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
+		{
+			ILobbyHUDInterface::Execute_SetTextToTextBlock_ChaserStatus(Widget,TotalChaserStatus);
+		}
+	}
+}
+
+void AJMSGamePlayController::SetRunnerCountUI(int32 RunnerCount)
+{
+	for (UUserWidget* Widget : ActiveWidgetArray)
+	{
+		if(Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
+		{
+			ILobbyHUDInterface::Execute_SetTextToTextBlock_RunnerCount(Widget,RunnerCount);
+		}
+	}
+}
+
+void AJMSGamePlayController::SetCanStartUI(bool CanStart)
+{
+	for (UUserWidget* Widget : ActiveWidgetArray)
+	{
+		if(Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
+		{
+			ILobbyHUDInterface::Execute_SetTextToTextBlock_CanStart(Widget,CanStart);
+		}
 	}
 }
 

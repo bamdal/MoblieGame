@@ -3,14 +3,16 @@
 
 #include "JMSMultiGameState.h"
 
+#include "JMSGamePlayController.h"
 #include "PlayGameMode.h"
+#include "GameFramework/HUD.h"
 #include "Net/UnrealNetwork.h"
 
 
 AJMSMultiGameState::AJMSMultiGameState()
 {
+	bReplicates = true;
 }
-
 
 
 void AJMSMultiGameState::UpdatePlayerCount()
@@ -21,16 +23,60 @@ void AJMSMultiGameState::UpdatePlayerCount()
 		{
 			AuthGM = GetWorld()->GetAuthGameMode<APlayGameMode>();
 		}
-		
-		CurrentPlayerCount = GetWorld()->GetAuthGameMode<APlayGameMode>()->GetCurrentPlayerCount();
-		OnRep_CurrentPlayerCount();
+
+		CurrentPlayerCount = AuthGM->GetCurrentPlayerCount();
+	
 	}
 }
 
+
 void AJMSMultiGameState::OnRep_CurrentPlayerCount()
 {
-	UE_LOG(LogTemp, Log, TEXT("현재 플레이어 수: %d"), CurrentPlayerCount);
-	
+	AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetWorld()->GetFirstPlayerController());
+	if (!HasAuthority())
+		if (PC)
+		{
+			UE_LOG(LogTemp, Error, TEXT("현재 플레이어: %s"), *PC->GetName());
+			PC->SetCountPlayerUI(CurrentPlayerCount);
+			PC->SetChaserStatusUI(CurrentChaserCount);
+			PC->SetRunnerCountUI(CurrentRunnerCount);
+			PC->SetCanStartUI(CanPlay);	
+		}
+}
+
+void AJMSMultiGameState::OnRep_CurrentChaserCount()
+{
+	UE_LOG(LogTemp, Warning, TEXT("클라이언트에서 OnRep_CurrentChaserCount 호출됨 (현재 술래 수: %d)"), CurrentChaserCount);
+
+	AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetWorld()->GetFirstPlayerController());
+	if (!HasAuthority())
+		if (PC)
+		{
+			UE_LOG(LogTemp, Error, TEXT("현재 술래 수: %d"), CurrentChaserCount);
+			PC->SetChaserStatusUI(CurrentChaserCount);
+		}
+}
+
+void AJMSMultiGameState::OnRep_CurrentRunnerCount()
+{
+	AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetWorld()->GetFirstPlayerController());
+	if (!HasAuthority())
+		if (PC)
+		{
+			UE_LOG(LogTemp, Error, TEXT("현재 도망자 수: %d"), CurrentRunnerCount);
+			PC->SetRunnerCountUI(CurrentRunnerCount);
+		}
+}
+
+void AJMSMultiGameState::OnRep_CanPlay()
+{
+	AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetWorld()->GetFirstPlayerController());
+	if (!HasAuthority())
+		if (PC)
+		{
+			UE_LOG(LogTemp, Error, TEXT("시작가능: %d"), CanPlay);
+			PC->SetCanStartUI(CanPlay);
+		}
 }
 
 void AJMSMultiGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -38,5 +84,7 @@ void AJMSMultiGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AJMSMultiGameState, CurrentPlayerCount);
+	DOREPLIFETIME(AJMSMultiGameState, CurrentChaserCount);
+	DOREPLIFETIME(AJMSMultiGameState, CurrentRunnerCount);
+	DOREPLIFETIME(AJMSMultiGameState, CanPlay);
 }
-
