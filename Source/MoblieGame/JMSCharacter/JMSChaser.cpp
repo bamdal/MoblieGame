@@ -3,7 +3,9 @@
 
 #include "JMSChaser.h"
 
+#include "EnhancedInputComponent.h"
 #include "Camera/CameraComponent.h"
+#include "MoblieGame/JMSGamePlay/JMSMultiGameState.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -17,6 +19,7 @@ void AJMSChaser::BeginPlay()
 {
 	Super::BeginPlay();
 
+	
 	//HideSelfFromCamera();
 
 }
@@ -50,7 +53,7 @@ void AJMSChaser::Tick(float DeltaTime)
 
 		// 3. 머리가 몸 기준으로 얼마나 회전했는지 계산
 		float HeadYawDelta = FMath::FindDeltaAngleDegrees(CharacterYaw, CameraYaw.Yaw);
-		bool bNewShouldTurnBody = FMath::Abs(HeadYawDelta) > 60.0f;
+		bool bNewShouldTurnBody = FMath::Abs(HeadYawDelta) > 30.0f;
 
 		if (HasAuthority())
 		{
@@ -128,6 +131,61 @@ void AJMSChaser::OnRep_ShouldTurnBody()
 void AJMSChaser::OnRep_TargetYawRotation()
 {
 	// 클라이언트에서 목표 회전값 업데이트 시 호출됨
+}
+
+void AJMSChaser::ChaserAttack(const FInputActionValue& InputActionValue)
+{
+}
+
+void AJMSChaser::ChaserCrouch(const FInputActionValue& InputActionValue)
+{
+
+	if (bIsCrouched)
+	{
+		UnCrouch();
+		
+	}
+	else
+	{
+		Crouch();
+		
+	}
+
+	
+}
+
+void AJMSChaser::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Started, this, &ThisClass::ChaserAttack);
+		EnhancedInputComponent->BindAction(IA_Crouch, ETriggerEvent::Started, this, &ThisClass::ChaserCrouch);
+
+	}
+}
+
+void AJMSChaser::PlayStart(const FInputActionValue& InputActionValue)
+{
+	
+	if (AJMSMultiGameState* GS = Cast<AJMSMultiGameState>(GetWorld()->GetGameState()))
+	{
+		if(GS->CanPlay)
+		{
+			UE_LOG(LogTemp, Display, TEXT("Play Start"));
+			// 술래가 게임 시작 요청을 함
+			
+		}
+		else
+		{
+			UE_LOG(LogTemp, Display, TEXT("Do Not Play Start"));
+
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Not Found GameState"));
+	}
 }
 
 

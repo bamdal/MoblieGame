@@ -122,7 +122,8 @@ void AJMSCharBase::ExitGame(const FInputActionValue& InputActionValue)
 
 void AJMSCharBase::PlayStart(const FInputActionValue& InputActionValue)
 {
-	UE_LOG(LogTemp, Display, TEXT("Play Start"));
+	
+
 }
 
 void AJMSCharBase::ApplyInputMappingContext()

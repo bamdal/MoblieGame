@@ -17,7 +17,7 @@ class MOBLIEGAME_API APlayGameMode : public AGameMode
 	GENERATED_BODY()
 public:
 
-	
+	APlayGameMode();
 
 
 

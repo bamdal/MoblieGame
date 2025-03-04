@@ -19,7 +19,7 @@ class MOBLIEGAME_API AJMSMultiPlayerState : public APlayerState
 	
 	AJMSMultiPlayerState();
 	// 각 플레이어들의 현재 어떤 역할을 가지고 있는지 공유한다.
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated,BlueprintReadOnly,Meta = (AllowPrivateAccess))
 	EDummyState PlayerCharacterRoleState = EDummyState::Runner_None;
 
 	UPROPERTY()

@@ -192,7 +192,8 @@ void AJMSGamePlayController::BeginPlay()
 	}
 	else if (GetWorld()->GetMapName().Contains("Battle"))
 	{
-		//MainWidget = BattleHUD;
+		
+		SetHUD(BattleHUD);
 	}	
 }
 

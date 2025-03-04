@@ -61,7 +61,23 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerUpdateHeadYaw(float NewHeadYaw, bool bNewShouldTurnBody);
 
+	
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* IA_Attack;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* IA_Crouch;
+
+	// 서버에 공격하라 알림
+	UFUNCTION()
+	void ChaserAttack(const FInputActionValue& InputActionValue);
+
+	// 앉기 수행
+	UFUNCTION()
+	void ChaserCrouch(const FInputActionValue& InputActionValue);
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
+	virtual void PlayStart(const FInputActionValue& InputActionValue) override;
 private:
     UFUNCTION(Server, Reliable, WithValidation)
     void ServerSetTargetYaw(FRotator NewRotation);

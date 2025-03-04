@@ -34,49 +34,74 @@ void AJMSMultiGameState::OnRep_CurrentPlayerCount()
 {
 	AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetWorld()->GetFirstPlayerController());
 	if (!HasAuthority())
+	{
 		if (PC)
 		{
-			UE_LOG(LogTemp, Error, TEXT("현재 플레이어: %s"), *PC->GetName());
 			PC->SetCountPlayerUI(CurrentPlayerCount);
 			PC->SetChaserStatusUI(CurrentChaserCount);
 			PC->SetRunnerCountUI(CurrentRunnerCount);
 			PC->SetCanStartUI(CanPlay);	
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("OnRep_CurrentPlayerCount Not PC"));
+		}
+	}
+
 }
 
 void AJMSMultiGameState::OnRep_CurrentChaserCount()
 {
-	UE_LOG(LogTemp, Warning, TEXT("클라이언트에서 OnRep_CurrentChaserCount 호출됨 (현재 술래 수: %d)"), CurrentChaserCount);
 
 	AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetWorld()->GetFirstPlayerController());
 	if (!HasAuthority())
+	{
 		if (PC)
 		{
-			UE_LOG(LogTemp, Error, TEXT("현재 술래 수: %d"), CurrentChaserCount);
+			
 			PC->SetChaserStatusUI(CurrentChaserCount);
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("OnRep_CurrentChaserCount Not PC"));
+		}
+	}
+
 }
 
 void AJMSMultiGameState::OnRep_CurrentRunnerCount()
 {
 	AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetWorld()->GetFirstPlayerController());
 	if (!HasAuthority())
+	{
 		if (PC)
 		{
-			UE_LOG(LogTemp, Error, TEXT("현재 도망자 수: %d"), CurrentRunnerCount);
+			
 			PC->SetRunnerCountUI(CurrentRunnerCount);
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("OnRep_CurrentRunnerCount Not PC"));
+		}
+	}
+
 }
 
 void AJMSMultiGameState::OnRep_CanPlay()
 {
 	AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetWorld()->GetFirstPlayerController());
 	if (!HasAuthority())
+	{
 		if (PC)
 		{
-			UE_LOG(LogTemp, Error, TEXT("시작가능: %d"), CanPlay);
 			PC->SetCanStartUI(CanPlay);
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("OnRep_CanPlay Not PC"));
+		}
+	}
+
 }
 
 void AJMSMultiGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

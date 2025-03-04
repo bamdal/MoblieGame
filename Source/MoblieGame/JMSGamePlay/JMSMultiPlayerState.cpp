@@ -72,7 +72,7 @@ void AJMSMultiPlayerState::SetPlayerCharacterRoleState_Implementation(EDummyStat
 	if (PlayerCharacterRoleState == NewPlayerCharacterRoleState)
 		return;
 
-	UE_LOG(LogTemp, Error, TEXT("Role 변경"));
+
 
 
 	// 술래가 술래가 아니게 되었을때
@@ -105,7 +105,15 @@ void AJMSMultiPlayerState::SetPlayerCharacterRoleState_Implementation(EDummyStat
 
 	// 서버에 LogOut이 호출되었을경우
 	if (NewPlayerCharacterRoleState == EDummyState::Runner_None)
+	{
+		if (MyGameState)
+		{
+			Server_UpdateChaserCount(MyGameState->CurrentChaserCount);
+			Server_UpdateRunnerCount(MyGameState->CurrentRunnerCount);
+			Server_UpdateCanPlay(MyGameState->CanPlay);
+		}
 		return;
+	}
 
 
 	// 역할정보 업데이트
@@ -116,7 +124,6 @@ void AJMSMultiPlayerState::SetPlayerCharacterRoleState_Implementation(EDummyStat
 		// 술래 알림
 		if (MyGameState)
 		{
-			UE_LOG(LogTemp, Error, TEXT("술래"));
 			MyGameState->CurrentChaserCount = 1;
 			MyGameState->OnRep_CurrentChaserCount();
 			MyGameState->CanPlay = (MyGameState->CurrentPlayerCount == MyGameState->CurrentChaserCount + MyGameState->CurrentRunnerCount) &&

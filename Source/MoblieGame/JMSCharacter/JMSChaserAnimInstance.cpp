@@ -10,6 +10,7 @@ void UJMSChaserAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
+	
 	OwnerCharacter = Cast<AJMSChaser>(TryGetPawnOwner());
 }
 

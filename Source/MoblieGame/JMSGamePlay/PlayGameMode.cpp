@@ -11,6 +11,10 @@
 #include "Blueprint/UserWidget.h"
 
 
+APlayGameMode::APlayGameMode()
+{
+	bUseSeamlessTravel = true;
+}
 
 void APlayGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
