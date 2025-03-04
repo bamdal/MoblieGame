@@ -30,6 +30,8 @@ void AJMSMultiGameState::UpdatePlayerCount()
 }
 
 
+
+
 void AJMSMultiGameState::OnRep_CurrentPlayerCount()
 {
 	AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetWorld()->GetFirstPlayerController());

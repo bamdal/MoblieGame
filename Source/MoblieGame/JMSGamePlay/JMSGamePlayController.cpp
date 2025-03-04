@@ -5,6 +5,7 @@
 
 #include "EngineUtils.h"
 #include "JMSMultiGameInstance.h"
+#include "JMSMultiGameState.h"
 #include "JMSMultiPlayerState.h"
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -91,6 +92,7 @@ void AJMSGamePlayController::Server_RequestChaserButtonReset_Implementation()
 	}
 }
 
+
 void AJMSGamePlayController::OnRep_DummyButtons()
 {
 }
@@ -104,9 +106,50 @@ void AJMSGamePlayController::ServerLogOut()
 		Server_RequestChaserButtonReset();
 	}
 	
-	// 다시 역할 반납
+		
 	PS->SetPlayerCharacterRoleState(EDummyState::Runner_None);
+
 }
+
+
+void AJMSGamePlayController::Server_UpdateChaserCount_Implementation(int32 NewValue)
+{
+	if (HasAuthority()) // 서버에서만 실행
+	{
+		AJMSMultiGameState* GS = Cast<AJMSMultiGameState>(GetWorld()->GetGameState());
+		if (GS)
+		{
+			GS->CurrentChaserCount = NewValue;
+			UE_LOG(LogTemp,Error,TEXT("CurrentChaserCount %d"),GS->CurrentChaserCount);
+		}
+	}
+}
+
+void AJMSGamePlayController::Server_UpdateRunnerCount_Implementation(int32 NewValue)
+{
+	if (HasAuthority()) // 서버에서만 실행
+	{
+		AJMSMultiGameState* GS = Cast<AJMSMultiGameState>(GetWorld()->GetGameState());
+		if (GS)
+		{
+			GS->CurrentRunnerCount = NewValue;
+			UE_LOG(LogTemp,Error,TEXT("CurrentRunnerCount %d"),GS->CurrentRunnerCount);
+		}
+	}
+}
+
+void AJMSGamePlayController::Server_UpdateCanPlay_Implementation(bool NewValue)
+{
+	if (HasAuthority()) // 서버에서만 실행
+	{
+		AJMSMultiGameState* GS = Cast<AJMSMultiGameState>(GetWorld()->GetGameState());
+		if (GS)
+		{
+			GS->CanPlay = NewValue;
+		}
+	}
+}
+
 
 void AJMSGamePlayController::SetHUD(TSubclassOf<UUserWidget> Widget)
 {

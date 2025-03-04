@@ -32,12 +32,7 @@ public:
 	UFUNCTION(NetMulticast,Reliable)
 	void SetPlayerCharacterRoleState(EDummyState NewPlayerCharacterRoleState);
 
-	UFUNCTION(Server, Reliable)
-	void Server_UpdateChaserCount(int32 NewValue);
-	UFUNCTION(Server, Reliable)
-	void Server_UpdateRunnerCount(int32 NewValue);
-	UFUNCTION(Server, Reliable)
-	void Server_UpdateCanPlay(bool NewValue);
+
 
 protected:
 

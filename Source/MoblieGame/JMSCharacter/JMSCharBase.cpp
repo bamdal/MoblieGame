@@ -20,7 +20,7 @@ AJMSCharBase::AJMSCharBase()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());
 	CameraBoom->TargetArmLength = 400.0f;
-	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
+	CameraBoom->SetRelativeLocation(FVector(8.0f, 10.0f, 168.0f));
 	CameraBoom->bUsePawnControlRotation = true;
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -117,6 +117,16 @@ void AJMSCharBase::Move(const FInputActionValue& Value)
 
 void AJMSCharBase::ExitGame(const FInputActionValue& InputActionValue)
 {
+
+
+	if (AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetController()))
+	{
+		PC->ServerLogOut();
+		UE_LOG(LogTemp,Warning,TEXT("Player Logged out : %s"), *PC->GetName());
+		
+	}
+
+	
 	UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, true);
 }
 

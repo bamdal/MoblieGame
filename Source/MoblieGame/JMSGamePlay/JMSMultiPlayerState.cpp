@@ -3,6 +3,7 @@
 
 #include "JMSMultiPlayerState.h"
 
+#include "JMSGamePlayController.h"
 #include "JMSMultiGameState.h"
 #include "Net/UnrealNetwork.h"
 
@@ -29,42 +30,6 @@ void AJMSMultiPlayerState::BeginPlay()
 EDummyState AJMSMultiPlayerState::GetPlayerCharacterRoleState() const
 {
 	return PlayerCharacterRoleState;
-}
-
-void AJMSMultiPlayerState::Server_UpdateChaserCount_Implementation(int32 NewValue)
-{
-	if (HasAuthority()) // 서버에서만 실행
-	{
-		AJMSMultiGameState* GS = Cast<AJMSMultiGameState>(GetWorld()->GetGameState());
-		if (GS)
-		{
-			GS->CurrentChaserCount = NewValue;
-		}
-	}
-}
-
-void AJMSMultiPlayerState::Server_UpdateRunnerCount_Implementation(int32 NewValue)
-{
-	if (HasAuthority()) // 서버에서만 실행
-	{
-		AJMSMultiGameState* GS = Cast<AJMSMultiGameState>(GetWorld()->GetGameState());
-		if (GS)
-		{
-			GS->CurrentRunnerCount = NewValue;
-		}
-	}
-}
-
-void AJMSMultiPlayerState::Server_UpdateCanPlay_Implementation(bool NewValue)
-{
-	if (HasAuthority()) // 서버에서만 실행
-	{
-		AJMSMultiGameState* GS = Cast<AJMSMultiGameState>(GetWorld()->GetGameState());
-		if (GS)
-		{
-			GS->CanPlay = NewValue;
-		}
-	}
 }
 
 void AJMSMultiPlayerState::SetPlayerCharacterRoleState_Implementation(EDummyState NewPlayerCharacterRoleState)
@@ -103,14 +68,21 @@ void AJMSMultiPlayerState::SetPlayerCharacterRoleState_Implementation(EDummyStat
 		}
 	}
 
+
 	// 서버에 LogOut이 호출되었을경우
 	if (NewPlayerCharacterRoleState == EDummyState::Runner_None)
 	{
 		if (MyGameState)
 		{
-			Server_UpdateChaserCount(MyGameState->CurrentChaserCount);
-			Server_UpdateRunnerCount(MyGameState->CurrentRunnerCount);
-			Server_UpdateCanPlay(MyGameState->CanPlay);
+			if(AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetOwningController()))
+			{
+				// 역할정보 업데이트
+				this->PlayerCharacterRoleState = NewPlayerCharacterRoleState;
+
+				PC->Server_UpdateChaserCount(MyGameState->CurrentChaserCount);
+				PC->Server_UpdateRunnerCount(MyGameState->CurrentRunnerCount);
+				PC->Server_UpdateCanPlay(MyGameState->CanPlay);
+			}
 		}
 		return;
 	}
@@ -145,9 +117,15 @@ void AJMSMultiPlayerState::SetPlayerCharacterRoleState_Implementation(EDummyStat
 	}
 	if (MyGameState)
 	{
-		Server_UpdateChaserCount(MyGameState->CurrentChaserCount);
-		Server_UpdateRunnerCount(MyGameState->CurrentRunnerCount);
-		Server_UpdateCanPlay(MyGameState->CanPlay);
+
+		if(AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetOwningController()))
+		{
+			PC->Server_UpdateChaserCount(MyGameState->CurrentChaserCount);
+			PC->Server_UpdateRunnerCount(MyGameState->CurrentRunnerCount);
+			PC->Server_UpdateCanPlay(MyGameState->CanPlay);
+		}
+		
+
 	}
 }
 

@@ -16,6 +16,8 @@ APlayGameMode::APlayGameMode()
 	bUseSeamlessTravel = true;
 }
 
+
+
 void APlayGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
@@ -79,14 +81,9 @@ void APlayGameMode::BeginPlay()
 }
 void APlayGameMode::Logout(AController* Exiting)
 {
-	Super::Logout(Exiting);
+	
 
-	if (AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(Exiting))
-	{
-		PC->ServerLogOut();
-		UE_LOG(LogTemp,Warning,TEXT("Player Logged out : %s"), *PC->GetName());
-		
-	}
+	Super::Logout(Exiting);
 
 	// 전체 인원수 갱신
 	// GameState 가져오기
@@ -95,6 +92,8 @@ void APlayGameMode::Logout(AController* Exiting)
 	{
 		GS->UpdatePlayerCount();
 	}
+
+
 }
 
 

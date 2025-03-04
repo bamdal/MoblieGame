@@ -6,6 +6,7 @@
 #include "JMSCharBase.h"
 #include "JMSChaser.generated.h"
 
+class UJMSChaserAnimInstance;
 /**
  * 
  */
@@ -72,6 +73,21 @@ public:
 	UFUNCTION()
 	void ChaserAttack(const FInputActionValue& InputActionValue);
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Input")
+	TObjectPtr<UAnimMontage> AttackMontage;
+
+	FOnMontageStarted OnAttackMontageStart;
+	FOnMontageEnded OnAttackMontageEnded;
+
+	UFUNCTION(Server, Reliable)
+	void Server_AttackMontage(UAnimMontage* AnimMontage);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_AttackMontage(UAnimMontage* AnimMontage);
+
+	UPROPERTY()
+	UJMSChaserAnimInstance* ChaserAnimInstance;
+
 	// 앉기 수행
 	UFUNCTION()
 	void ChaserCrouch(const FInputActionValue& InputActionValue);
@@ -81,7 +97,6 @@ public:
 private:
     UFUNCTION(Server, Reliable, WithValidation)
     void ServerSetTargetYaw(FRotator NewRotation);
-   
 
 
 	

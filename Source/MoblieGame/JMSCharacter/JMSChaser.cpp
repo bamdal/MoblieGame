@@ -4,9 +4,12 @@
 #include "JMSChaser.h"
 
 #include "EnhancedInputComponent.h"
+#include "JMSChaserAnimInstance.h"
 #include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "MoblieGame/JMSGamePlay/JMSMultiGameState.h"
 #include "Net/UnrealNetwork.h"
+#include "UniversalObjectLocators/AnimInstanceLocatorFragment.h"
 
 
 AJMSChaser::AJMSChaser()
@@ -19,8 +22,13 @@ void AJMSChaser::BeginPlay()
 {
 	Super::BeginPlay();
 
-	
-	//HideSelfFromCamera();
+	ChaserAnimInstance = Cast<UJMSChaserAnimInstance>(GetMesh()->GetAnimInstance());
+
+	if (GetWorld()->GetMapName().Contains("Battle"))
+	{
+		HideSelfFromCamera();
+		
+	}
 
 }
 
@@ -100,6 +108,7 @@ void AJMSChaser::HideSelfFromCamera()
 		{
 			// ControlledPawn이 자기 자신일 경우 렌더링 비활성화
 			ControlledPawn->SetActorHiddenInGame(true);
+			SetCameraBoomLength(0.0f);
 		}	
 	}
 	
@@ -135,6 +144,31 @@ void AJMSChaser::OnRep_TargetYawRotation()
 
 void AJMSChaser::ChaserAttack(const FInputActionValue& InputActionValue)
 {
+	if (!AttackMontage && !ChaserAnimInstance)
+	{
+		return;
+	}
+	
+	if (!ChaserAnimInstance->Montage_IsPlaying(AttackMontage) )
+	{
+		Server_AttackMontage(AttackMontage);
+	}
+}
+
+void AJMSChaser::Server_AttackMontage_Implementation(UAnimMontage* AnimMontage)
+{
+	if (HasAuthority())
+	{
+		Multicast_AttackMontage(AnimMontage);
+	}
+}
+
+void AJMSChaser::Multicast_AttackMontage_Implementation(UAnimMontage* AnimMontage)
+{
+	if (!HasAuthority())
+	{
+		ChaserAnimInstance->Montage_Play(AnimMontage);
+	}
 }
 
 void AJMSChaser::ChaserCrouch(const FInputActionValue& InputActionValue)
@@ -143,12 +177,13 @@ void AJMSChaser::ChaserCrouch(const FInputActionValue& InputActionValue)
 	if (bIsCrouched)
 	{
 		UnCrouch();
-		
+		SetCameraBoomRelativeLocation(FVector(8.0f, 10.0f, 168.0f));
 	}
 	else
 	{
 		Crouch();
-		
+		SetCameraBoomRelativeLocation(FVector(8.0f, 10.0f, 118.0f));
+
 	}
 
 	
@@ -211,6 +246,7 @@ bool AJMSChaser::ServerUpdateHeadYaw_Validate(float NewHeadYaw, bool bNewShouldT
 {
 	return true;
 }
+
 
 void AJMSChaser::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

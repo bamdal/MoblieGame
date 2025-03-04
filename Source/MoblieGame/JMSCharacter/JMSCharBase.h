@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 
 #include "OnlineSessionSettings.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "JMSCharBase.generated.h"
 
@@ -27,6 +28,8 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const {return CameraBoom;}
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const {return FollowCamera;}
 
+	void SetCameraBoomLength(const float Value) const { CameraBoom->TargetArmLength = Value;};
+	void SetCameraBoomRelativeLocation(const FVector& Value) const { CameraBoom->SetRelativeLocation(Value);};
 	// IMC & IA ----------------------------------------------------
 public:
 	/** MappingContext for player input. */

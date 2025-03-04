@@ -38,6 +38,16 @@ public:
 	// 추적자였다가 Runner전환시 버튼 롤백용 함수
 	UFUNCTION(Server, Reliable)
 	void Server_RequestChaserButtonReset();
+
+	
+	UFUNCTION(Server, Reliable)
+	void Server_UpdateChaserCount(int32 NewValue);
+	UFUNCTION(Server, Reliable)
+	void Server_UpdateRunnerCount(int32 NewValue);
+	UFUNCTION(Server, Reliable)
+	void Server_UpdateCanPlay(bool NewValue);
+
+
 public:
 	UPROPERTY(ReplicatedUsing=OnRep_DummyButtons)
 	TArray<TObjectPtr<AJMSDummyButton>> Buttons;
