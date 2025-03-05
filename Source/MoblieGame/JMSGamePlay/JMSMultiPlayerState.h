@@ -22,12 +22,15 @@ class MOBLIEGAME_API AJMSMultiPlayerState : public APlayerState
 	UPROPERTY(Replicated,BlueprintReadOnly,Meta = (AllowPrivateAccess))
 	EDummyState PlayerCharacterRoleState = EDummyState::Runner_None;
 
+
+private:
+
 	UPROPERTY()
 	AJMSMultiGameState* MyGameState;
-	
-public:
-	[[nodiscard]] EDummyState GetPlayerCharacterRoleState() const;
 
+public:
+
+	[[nodiscard]] EDummyState GetPlayerCharacterRoleState() const;
 	
 	UFUNCTION(NetMulticast,Reliable)
 	void SetPlayerCharacterRoleState(EDummyState NewPlayerCharacterRoleState);

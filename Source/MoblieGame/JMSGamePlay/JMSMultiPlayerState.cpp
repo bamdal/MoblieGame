@@ -13,6 +13,8 @@ AJMSMultiPlayerState::AJMSMultiPlayerState()
 	bReplicates = true;
 }
 
+
+
 void AJMSMultiPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
@@ -26,6 +28,8 @@ void AJMSMultiPlayerState::BeginPlay()
 		}
 	}
 }
+
+
 
 EDummyState AJMSMultiPlayerState::GetPlayerCharacterRoleState() const
 {
@@ -90,6 +94,7 @@ void AJMSMultiPlayerState::SetPlayerCharacterRoleState_Implementation(EDummyStat
 
 	// 역할정보 업데이트
 	this->PlayerCharacterRoleState = NewPlayerCharacterRoleState;
+	
 
 	if (PlayerCharacterRoleState == EDummyState::Chaser)
 	{
@@ -127,6 +132,7 @@ void AJMSMultiPlayerState::SetPlayerCharacterRoleState_Implementation(EDummyStat
 		
 
 	}
+
 }
 
 

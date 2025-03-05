@@ -93,7 +93,7 @@ public:
 	void ChaserCrouch(const FInputActionValue& InputActionValue);
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-	virtual void PlayStart(const FInputActionValue& InputActionValue) override;
+	virtual void PlayStart() override;
 private:
     UFUNCTION(Server, Reliable, WithValidation)
     void ServerSetTargetYaw(FRotator NewRotation);

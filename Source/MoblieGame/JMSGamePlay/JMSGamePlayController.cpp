@@ -10,12 +10,14 @@
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "MoblieGame/JMSCharacter/JMSCharBase.h"
+#include "MoblieGame/JMSInterface/BattleHUDInterface.h"
 #include "MoblieGame/JMSInterface/LobbyHUDInterface.h"
 #include "Net/UnrealNetwork.h"
 
 
 void AJMSGamePlayController::Server_RequestResponseCharacter_Implementation(TSubclassOf<AJMSCharBase> Char, FVector Location)
 {
+	UE_LOG(LogTemp, Error, TEXT("Server"));
 	Multicast_UpdateResponseCharacter(Char, Location);
 }
 
@@ -24,25 +26,55 @@ bool AJMSGamePlayController::Server_RequestResponseCharacter_Validate(TSubclassO
 	return true;
 }
 
+
 void AJMSGamePlayController::Multicast_UpdateResponseCharacter_Implementation(TSubclassOf<AJMSCharBase> Char, FVector Location)
 {
+	UE_LOG(LogTemp, Error, TEXT("Multi"));
+
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 
 	APawn* OldNonePawn = GetPawn();
 	if (OldNonePawn == nullptr)
-		return;
-	if (HasAuthority())
 	{
-		FRotator NewRotation = GetPawn()->GetControlRotation();
-		UnPossess();
-		Possess(GetWorld()->SpawnActor<AJMSCharBase>(Char, Location, NewRotation, SpawnParams));
-		OldNonePawn->Destroy();
+		if (HasAuthority())
+		{
+			UE_LOG(LogTemp, Error, TEXT("nullpawn"));
+
+			UnPossess();
+			SetPawn(GetWorld()->SpawnActor<AJMSCharBase>(Char, Location, FRotator::ZeroRotator, SpawnParams));
+
+			if (GetPawn())
+			{
+				Possess(GetPawn());
+				GetWorld()->GetTimerManager().SetTimer(TimerHandle_Possess, this, &ThisClass::DelayedPossess, 0.1f, false);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Character Spawn Failed!"));
+			}
+		}
 	}
+	else
+	{
+		if (HasAuthority())
+		{
+			UE_LOG(LogTemp, Error, TEXT("getpawn"));
+
+			FRotator NewRotation = GetPawn()->GetControlRotation();
+			UnPossess();
+			SetPawn(GetWorld()->SpawnActor<AJMSCharBase>(Char, Location, NewRotation, SpawnParams));
+			Possess(GetPawn());
+			OldNonePawn->Destroy();
+		}
+	}
+
 
 	if (GetPawn())
 	{
+		UE_LOG(LogTemp, Error, TEXT("성공"));
+
 		ClientRestart(GetPawn());
 
 		// Possess 후 MovementComponent 체크
@@ -93,6 +125,21 @@ void AJMSGamePlayController::Server_RequestChaserButtonReset_Implementation()
 }
 
 
+void AJMSGamePlayController::Server_ServerTravel_Implementation(const FString& FURL, bool bAbsolute, bool bShouldSkipGameNotify)
+{
+	if (GetWorld()->ServerTravel(FURL, bAbsolute, bShouldSkipGameNotify))
+	{
+		UE_LOG(LogTemp, Display, TEXT("Travel Success"));
+	}
+}
+
+
+void AJMSGamePlayController::DelayedPossess()
+{
+	UE_LOG(LogTemp, Display, TEXT("Delayed Possess"));
+	UE_LOG(LogTemp, Warning, TEXT("현재 UI 개수: %d"), ActiveWidgetArray.Num());
+}
+
 void AJMSGamePlayController::OnRep_DummyButtons()
 {
 }
@@ -105,10 +152,9 @@ void AJMSGamePlayController::ServerLogOut()
 		// 종료될시 술래라면 버튼 롤백
 		Server_RequestChaserButtonReset();
 	}
-	
-		
-	PS->SetPlayerCharacterRoleState(EDummyState::Runner_None);
 
+
+	PS->SetPlayerCharacterRoleState(EDummyState::Runner_None);
 }
 
 
@@ -120,7 +166,7 @@ void AJMSGamePlayController::Server_UpdateChaserCount_Implementation(int32 NewVa
 		if (GS)
 		{
 			GS->CurrentChaserCount = NewValue;
-			UE_LOG(LogTemp,Error,TEXT("CurrentChaserCount %d"),GS->CurrentChaserCount);
+			UE_LOG(LogTemp, Error, TEXT("CurrentChaserCount %d"), GS->CurrentChaserCount);
 		}
 	}
 }
@@ -133,7 +179,7 @@ void AJMSGamePlayController::Server_UpdateRunnerCount_Implementation(int32 NewVa
 		if (GS)
 		{
 			GS->CurrentRunnerCount = NewValue;
-			UE_LOG(LogTemp,Error,TEXT("CurrentRunnerCount %d"),GS->CurrentRunnerCount);
+			UE_LOG(LogTemp, Error, TEXT("CurrentRunnerCount %d"), GS->CurrentRunnerCount);
 		}
 	}
 }
@@ -153,12 +199,13 @@ void AJMSGamePlayController::Server_UpdateCanPlay_Implementation(bool NewValue)
 
 void AJMSGamePlayController::SetHUD(TSubclassOf<UUserWidget> Widget)
 {
-
-
 	UUserWidget* NewWidget = CreateWidget<UUserWidget>(GetWorld(), Widget);
-	
+	UE_LOG(LogTemp, Error, TEXT("Battle Map"));
+
 	if (NewWidget != nullptr)
 	{
+		UE_LOG(LogTemp, Error, TEXT("AddToViewport"));
+
 		ActiveWidgetArray.Add(NewWidget);
 		NewWidget->AddToViewport();
 	}
@@ -168,9 +215,9 @@ void AJMSGamePlayController::SetCountPlayerUI(int32 CurrentUser)
 {
 	for (UUserWidget* Widget : ActiveWidgetArray)
 	{
-		if(Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
+		if (Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
 		{
-			ILobbyHUDInterface::Execute_SetTextToTextBlock_TotalPlayers(Widget,CurrentUser);
+			ILobbyHUDInterface::Execute_SetTextToTextBlock_TotalPlayers(Widget, CurrentUser);
 		}
 	}
 }
@@ -179,9 +226,9 @@ void AJMSGamePlayController::SetChaserStatusUI(int32 TotalChaserStatus)
 {
 	for (UUserWidget* Widget : ActiveWidgetArray)
 	{
-		if(Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
+		if (Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
 		{
-			ILobbyHUDInterface::Execute_SetTextToTextBlock_ChaserStatus(Widget,TotalChaserStatus);
+			ILobbyHUDInterface::Execute_SetTextToTextBlock_ChaserStatus(Widget, TotalChaserStatus);
 		}
 	}
 }
@@ -190,9 +237,9 @@ void AJMSGamePlayController::SetRunnerCountUI(int32 RunnerCount)
 {
 	for (UUserWidget* Widget : ActiveWidgetArray)
 	{
-		if(Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
+		if (Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
 		{
-			ILobbyHUDInterface::Execute_SetTextToTextBlock_RunnerCount(Widget,RunnerCount);
+			ILobbyHUDInterface::Execute_SetTextToTextBlock_RunnerCount(Widget, RunnerCount);
 		}
 	}
 }
@@ -201,17 +248,40 @@ void AJMSGamePlayController::SetCanStartUI(bool CanStart)
 {
 	for (UUserWidget* Widget : ActiveWidgetArray)
 	{
-		if(Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
+		if (Widget->GetClass()->ImplementsInterface(ULobbyHUDInterface::StaticClass()))
 		{
-			ILobbyHUDInterface::Execute_SetTextToTextBlock_CanStart(Widget,CanStart);
+			ILobbyHUDInterface::Execute_SetTextToTextBlock_CanStart(Widget, CanStart);
 		}
 	}
 }
 
+void AJMSGamePlayController::Server_ShowUI_Implementation()
+{
+	ShowUI();
+}
+
+void AJMSGamePlayController::ShowUI_Implementation()
+{
+	if (!IsLocalController()) return;
+
+
+	ClearUI();
+
+	if (GetWorld()->GetMapName().Contains("Lobby"))
+	{
+		SetHUD(LobbyHUD);
+	}
+	else if (GetWorld()->GetMapName().Contains("Battle"))
+	{
+		SetHUD(BattleHUD);
+	}
+}
+
+
 
 void AJMSGamePlayController::ClearUI()
 {
-	for (auto Element : 	ActiveWidgetArray)
+	for (auto Element : ActiveWidgetArray)
 	{
 		Element->RemoveFromParent();
 	}
@@ -220,7 +290,7 @@ void AJMSGamePlayController::ClearUI()
 void AJMSGamePlayController::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	if (HasAuthority())
 	{
 		for (TActorIterator<AJMSDummyButton> It(GetWorld()); It; ++It)
@@ -229,24 +299,14 @@ void AJMSGamePlayController::BeginPlay()
 		}
 	}
 
-	if (GetWorld()->GetMapName().Contains("Lobby"))
-	{
-		SetHUD(LobbyHUD);
-	}
-	else if (GetWorld()->GetMapName().Contains("Battle"))
-	{
-		
-		SetHUD(BattleHUD);
-	}	
+	ShowUI();
 }
 
 void AJMSGamePlayController::Destroyed()
 {
-
 	ClearUI();
-	
+
 	Super::Destroyed();
-	
 }
 
 

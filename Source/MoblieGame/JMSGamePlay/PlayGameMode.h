@@ -6,6 +6,7 @@
 #include "GameFramework/GameMode.h"
 #include "PlayGameMode.generated.h"
 
+class AJMSCharBase;
 class UJMSMultiGameInstance;
 class AJMSDummyButton;
 /**
@@ -20,7 +21,16 @@ public:
 	APlayGameMode();
 
 
-	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "JMSDummy")
+	TArray<TSubclassOf<AJMSCharBase>> PlayerCharacters;
+
+private:
+	UPROPERTY()
+	int32 MaxGamePlayerCount;
+
+public:
+	[[nodiscard]] int32 GetMaxGamePlayerCount() const;
+	void SetMaxGamePlayerCount(int32 MaxGamePlayerCount);
 
 protected:
 
@@ -32,6 +42,12 @@ protected:
 
 	virtual void Logout(AController* Exiting) override;
 
+
+	virtual void PostSeamlessTravel() override;
+	virtual void HandleSeamlessTravelPlayer(AController*& C) override;
+	virtual void InitSeamlessTravelPlayer(AController* NewController) override;
+
+	
 	void AllowCharacterSelection(APlayerController* NewPlayer);
 
 public:

@@ -8,6 +8,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/TextBlock.h"
+#include "MoblieGame/JMSCharacter/JMSChaser.h"
 
 
 void ULobbyHUD::SetTextToTextBlock_TotalPlayers_Implementation(int32 TotalCountPlayers)
@@ -43,13 +44,25 @@ void ULobbyHUD::SetTextToTextBlock_CanStart_Implementation(bool CanStart)
 void ULobbyHUD::OnClickExitButton()
 {
 	// 게임 종료 기능
-	UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, true);
+	AJMSCharBase* P = Cast<AJMSCharBase>(GetOwningPlayerPawn());
+	if (P)
+	{
+		
+		P->ExitGame();
+	}
 }
 
 void ULobbyHUD::OnClickStartButton()
 {
 	// 게임 시작 기능
 	UE_LOG(LogTemp, Warning, TEXT("OnClickStartButton"));
+
+	AJMSChaser* P = Cast<AJMSChaser>(GetOwningPlayerPawn());
+	if (P)
+	{
+		
+		P->PlayStart();
+	}
 }
 
 void ULobbyHUD::NativePreConstruct()

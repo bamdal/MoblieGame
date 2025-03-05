@@ -49,8 +49,8 @@ public:
 
 	void Look(const FInputActionValue& Value);
 	void Move(const FInputActionValue& Value);
-	void ExitGame(const FInputActionValue& InputActionValue);
-	virtual void PlayStart(const FInputActionValue& InputActionValue);
+	void ExitGame();
+	virtual void PlayStart();
 	// IMC & IA ----------------------------------------------------
 
 	void ApplyInputMappingContext();

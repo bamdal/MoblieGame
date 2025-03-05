@@ -18,17 +18,14 @@ class MOBLIEGAME_API AJMSGamePlayController : public APlayerController
 {
 	GENERATED_BODY()
 
-
 public:
-
-
 	// 서버 RPC (서버에 캐릭터 스폰하라 알림)
 	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_RequestResponseCharacter(TSubclassOf<AJMSCharBase> Char,FVector Location);
+	void Server_RequestResponseCharacter(TSubclassOf<AJMSCharBase> Char, FVector Location);
 
 	// 모든 클라이언트에게 상태 동기화
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_UpdateResponseCharacter(TSubclassOf<AJMSCharBase> Char,FVector Location);
+	void Multicast_UpdateResponseCharacter(TSubclassOf<AJMSCharBase> Char, FVector Location);
 
 
 	// 서버 RPC (서버에 버튼 색상 변경하라 알림)
@@ -39,7 +36,7 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestChaserButtonReset();
 
-	
+
 	UFUNCTION(Server, Reliable)
 	void Server_UpdateChaserCount(int32 NewValue);
 	UFUNCTION(Server, Reliable)
@@ -47,6 +44,12 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_UpdateCanPlay(bool NewValue);
 
+	UFUNCTION(Server, Reliable)
+	void Server_ServerTravel(const FString& FURL, bool bAbsolute = false, bool bShouldSkipGameNotify = false);
+
+	FTimerHandle TimerHandle_Possess;
+	UFUNCTION()
+	void DelayedPossess();
 
 public:
 	UPROPERTY(ReplicatedUsing=OnRep_DummyButtons)
@@ -59,11 +62,11 @@ public:
 	void ServerLogOut();
 
 	// 해당 맵에 사용할 UI
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<UUserWidget> LobbyHUD;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<UUserWidget> BattleHUD;
-	
+
 
 	//소환된 UI
 	UPROPERTY()
@@ -82,20 +85,25 @@ public:
 	void SetRunnerCountUI(int32 RunnerCount);
 	UFUNCTION()
 	void SetCanStartUI(bool CanStart);
+
+	UFUNCTION(Server, Reliable)
+	void Server_ShowUI();
+	
+	UFUNCTION(NetMulticast,Reliable)
+	void ShowUI();
 	
 	//UI 삭제
 	UFUNCTION()
 	void ClearUI();
+
 private:
 	UPROPERTY()
 	TSubclassOf<UUserWidget> NewHUD;
 
 	UPROPERTY()
 	UJMSMultiGameInstance* GI;
-protected:
 
-	
-	
+protected:
 	virtual void BeginPlay() override;
 
 	virtual void Destroyed() override;

@@ -7,6 +7,7 @@
 #include "JMSChaserAnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "MoblieGame/JMSGamePlay/JMSGamePlayController.h"
 #include "MoblieGame/JMSGamePlay/JMSMultiGameState.h"
 #include "Net/UnrealNetwork.h"
 #include "UniversalObjectLocators/AnimInstanceLocatorFragment.h"
@@ -27,11 +28,8 @@ void AJMSChaser::BeginPlay()
 	if (GetWorld()->GetMapName().Contains("Battle"))
 	{
 		HideSelfFromCamera();
-		
 	}
-
 }
-
 
 
 void AJMSChaser::Tick(float DeltaTime)
@@ -72,8 +70,8 @@ void AJMSChaser::Tick(float DeltaTime)
 		{
 			ServerUpdateHeadYaw(HeadYawDelta, bNewShouldTurnBody);
 		}
-		
-		
+
+
 		// 4. 몸 회전 적용 (머리가 60도 이상 돌았을 때)
 		if (bNewShouldTurnBody)
 		{
@@ -87,8 +85,6 @@ void AJMSChaser::Tick(float DeltaTime)
 				ServerSetTargetYaw(TargetYaw); // 클라이언트는 서버에 목표 회전값 요청
 			}
 		}
-		
-
 	}
 
 	// 5. 모든 클라이언트는 목표 회전값을 받아 부드럽게 회전
@@ -109,9 +105,8 @@ void AJMSChaser::HideSelfFromCamera()
 			// ControlledPawn이 자기 자신일 경우 렌더링 비활성화
 			ControlledPawn->SetActorHiddenInGame(true);
 			SetCameraBoomLength(0.0f);
-		}	
+		}
 	}
-	
 }
 
 void AJMSChaser::OnRep_LookAtTarget()
@@ -148,8 +143,8 @@ void AJMSChaser::ChaserAttack(const FInputActionValue& InputActionValue)
 	{
 		return;
 	}
-	
-	if (!ChaserAnimInstance->Montage_IsPlaying(AttackMontage) )
+
+	if (!ChaserAnimInstance->Montage_IsPlaying(AttackMontage))
 	{
 		Server_AttackMontage(AttackMontage);
 	}
@@ -173,7 +168,6 @@ void AJMSChaser::Multicast_AttackMontage_Implementation(UAnimMontage* AnimMontag
 
 void AJMSChaser::ChaserCrouch(const FInputActionValue& InputActionValue)
 {
-
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -183,10 +177,7 @@ void AJMSChaser::ChaserCrouch(const FInputActionValue& InputActionValue)
 	{
 		Crouch();
 		SetCameraBoomRelativeLocation(FVector(8.0f, 10.0f, 118.0f));
-
 	}
-
-	
 }
 
 void AJMSChaser::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -196,25 +187,28 @@ void AJMSChaser::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	{
 		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Started, this, &ThisClass::ChaserAttack);
 		EnhancedInputComponent->BindAction(IA_Crouch, ETriggerEvent::Started, this, &ThisClass::ChaserCrouch);
-
 	}
 }
 
-void AJMSChaser::PlayStart(const FInputActionValue& InputActionValue)
+void AJMSChaser::PlayStart()
 {
-	
 	if (AJMSMultiGameState* GS = Cast<AJMSMultiGameState>(GetWorld()->GetGameState()))
 	{
-		if(GS->CanPlay)
+		if (GS->CanPlay)
 		{
 			UE_LOG(LogTemp, Display, TEXT("Play Start"));
-			// 술래가 게임 시작 요청을 함
-			
+			// 술래가 게임 시작 요청을 함 서버에서 진행하게 해야함
+			AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(GetController());
+			if (PC)
+			{
+				UE_LOG(LogTemp, Display, TEXT("Try Travel"));
+				PC->Server_ServerTravel(FString("/Game/Map/Battle?game=PlayGameMode"), true);
+
+			}
 		}
 		else
 		{
 			UE_LOG(LogTemp, Display, TEXT("Do Not Play Start"));
-
 		}
 	}
 	else
@@ -233,7 +227,6 @@ bool AJMSChaser::ServerSetTargetYaw_Validate(FRotator NewRotation)
 {
 	return true;
 }
-
 
 
 void AJMSChaser::ServerUpdateHeadYaw_Implementation(float NewHeadYaw, bool bNewShouldTurnBody)

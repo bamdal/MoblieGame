@@ -5,11 +5,9 @@
 
 #include "EngineUtils.h"
 #include "JMSGamePlayController.h"
-#include "JMSMultiGameInstance.h"
 #include "JMSMultiGameState.h"
+#include "JMSMultiPlayerState.h"
 #include "GameFramework/PlayerStart.h"
-#include "Blueprint/UserWidget.h"
-
 
 APlayGameMode::APlayGameMode()
 {
@@ -17,11 +15,19 @@ APlayGameMode::APlayGameMode()
 }
 
 
+int32 APlayGameMode::GetMaxGamePlayerCount() const
+{
+	return MaxGamePlayerCount;
+}
+
+void APlayGameMode::SetMaxGamePlayerCount(int32 NewMaxGamePlayerCount)
+{
+	this->MaxGamePlayerCount = NewMaxGamePlayerCount;
+}
 
 void APlayGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
-
 }
 
 void APlayGameMode::StartPlay()
@@ -29,8 +35,6 @@ void APlayGameMode::StartPlay()
 	// 처음 시작시 대기상태
 	bDelayedStart = true;
 	Super::StartPlay();
-
-
 }
 
 void APlayGameMode::PostLogin(APlayerController* NewPlayer)
@@ -44,12 +48,13 @@ void APlayGameMode::PostLogin(APlayerController* NewPlayer)
 		FInputModeGameOnly InputMode;
 		NewPlayer->SetInputMode(InputMode);
 		NewPlayer->bShowMouseCursor = false; // 마우스 커서를 숨김
-
 	});
 	if (HasMatchStarted())
 	{
 		// 게임 시작중 진입하면 스펙터로 전환
 		NewPlayer->StartSpectatingOnly();
+		FHitResult Hit;
+		NewPlayer->K2_SetActorLocation(FVector(0,-2400,1500),false,Hit,true);
 		UE_LOG(LogTemp, Warning, TEXT("새 플레이어 %s 가 Spectator로 설정됨."), *NewPlayer->GetName());
 	}
 	else
@@ -66,23 +71,16 @@ void APlayGameMode::PostLogin(APlayerController* NewPlayer)
 	{
 		GS->UpdatePlayerCount();
 	}
-
-
-
 }
 
 
 void APlayGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-
-	
-
 }
+
 void APlayGameMode::Logout(AController* Exiting)
 {
-	
-
 	Super::Logout(Exiting);
 
 	// 전체 인원수 갱신
@@ -92,7 +90,92 @@ void APlayGameMode::Logout(AController* Exiting)
 	{
 		GS->UpdatePlayerCount();
 	}
+}
 
+
+void APlayGameMode::PostSeamlessTravel()
+{
+	UE_LOG(LogTemp,Error,TEXT("PostSeamlessTravelStart"));
+	Super::PostSeamlessTravel();
+	UE_LOG(LogTemp,Error,TEXT("PostSeamlessTravelEnd"));
+
+	
+}
+
+void APlayGameMode::HandleSeamlessTravelPlayer(AController*& C)
+{
+	EDummyState CharRole = EDummyState::Runner_None;
+	if (AJMSMultiPlayerState* PS = Cast<AJMSMultiPlayerState>(C->PlayerState))
+	{
+		UE_LOG(LogTemp, Log, TEXT("HandleSeamlessTravelPlayerStart: PlayerState 유지됨 -> %s"), *PS->GetPlayerName());
+		CharRole = PS->GetPlayerCharacterRoleState();
+	}
+
+	Super::HandleSeamlessTravelPlayer(C);
+
+	if (AJMSMultiPlayerState* PS = Cast<AJMSMultiPlayerState>(C->PlayerState))
+	{
+		// ✅ 기존의 PlayerState 데이터를 동기화
+		UE_LOG(LogTemp, Log, TEXT("HandleSeamlessTravelPlayerEnd: PlayerState 유지됨 -> %s"), *PS->GetPlayerName());
+		PS->SetPlayerCharacterRoleState(CharRole);
+
+		if (PS)
+		{
+			int32 Index = 0;
+			UE_LOG(LogTemp,Error,TEXT("PC %hhd"),PS->GetPlayerCharacterRoleState());
+
+			switch (PS->GetPlayerCharacterRoleState())
+			{
+			case EDummyState::Chaser:
+				Index = 0;
+				break;
+			case EDummyState::Runner_Duck:
+				Index = 1;
+				break;
+			case EDummyState::Runner_Deer:
+				Index = 2;
+				break;
+			case EDummyState::Runner_Statue:
+				Index = 3;
+				break;
+			default:
+				Index = 3;
+				break;
+			}
+			if (PlayerCharacters.IsValidIndex(Index))
+			{
+				if(AJMSGamePlayController* PC = Cast<AJMSGamePlayController>(C))
+				{
+					PC->Server_RequestResponseCharacter(PlayerCharacters[Index],FVector(0,-2400,1500));
+
+					// 0.2초 후 Server_ShowUI() 실행
+					FTimerHandle TimerHandle;
+					GetWorld()->GetTimerManager().SetTimer(
+						TimerHandle, 
+						FTimerDelegate::CreateLambda([PC]()
+						{
+							if (PC) // Controller가 아직 유효한지 확인
+							{
+								PC->Server_ShowUI();
+							}
+						}),
+						0.2f, 
+						false // 반복 실행 여부 (false = 한 번만 실행)
+					);
+				}
+			}
+		}
+	}
+
+	SetMaxGamePlayerCount(GetCurrentPlayerCount());
+	StartMatch();
+}
+
+void APlayGameMode::InitSeamlessTravelPlayer(AController* NewController)
+{
+	UE_LOG(LogTemp, Log, TEXT("InitSeamlessTravelPlayerStart"));
+
+	Super::InitSeamlessTravelPlayer(NewController);
 
 }
 
@@ -106,7 +189,7 @@ void APlayGameMode::AllowCharacterSelection(APlayerController* NewPlayer)
 		{
 			if (PC->GetPawn())
 			{
-				PC->GetPawn()->Destroyed();
+				PC->GetPawn()->Destroy();
 			}
 
 			if (DefaultPawnClass)

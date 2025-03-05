@@ -115,7 +115,7 @@ void AJMSCharBase::Move(const FInputActionValue& Value)
 	}
 }
 
-void AJMSCharBase::ExitGame(const FInputActionValue& InputActionValue)
+void AJMSCharBase::ExitGame()
 {
 
 
@@ -130,7 +130,7 @@ void AJMSCharBase::ExitGame(const FInputActionValue& InputActionValue)
 	UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, true);
 }
 
-void AJMSCharBase::PlayStart(const FInputActionValue& InputActionValue)
+void AJMSCharBase::PlayStart()
 {
 	
 
